@@ -8,28 +8,503 @@ export default function BadgesScreen() {
 
       {/* Example badge cards */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>🏕️ Camper</Text>
+        <Text style={styles.cardTitle}>🏕️ Aircraft Badge</Text>
         <Text style={styles.cardText}>Status: Not started</Text>
         <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Add Evidence</Text>
+          <Text style={styles.buttonText}>Log progress</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>🔧 Handyman</Text>
+        <Text style={styles.cardTitle}>🔧 Aquanaut Badge</Text>
         <Text style={styles.cardText}>Status: Not started</Text>
         <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Add Evidence</Text>
+          <Text style={styles.buttonText}>Log progress</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>🎨 Artist</Text>
+        <Text style={styles.cardTitle}>🎨 Archaeologist Badge</Text>
         <Text style={styles.cardText}>Status: Not started</Text>
         <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Add Evidence</Text>
+          <Text style={styles.buttonText}>Log progress</Text>
         </TouchableOpacity>
       </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Artist Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Athlete Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Birds Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Boating Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Chess Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Citizen Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Civil Emergency Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Collector Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Computer Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Conservation Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Cooking Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Craftsman Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Cycling Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Drawing Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Engineer Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Entertaining Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Entrepreneur Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Family Camping Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 First Aid & Health Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Fishing Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Flying Models Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Food for Life Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Gardening Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Geocaching Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Geologist Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Handcraft Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Herpetologist Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Hiking Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Homecraft Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Indigenous Games Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Landscaping Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Linguist Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Masks Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 miniSASS Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Model Boats Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Naturalist Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Nature Craft Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Open Water Swimmer Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Outdoorsman Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Pets Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Photography Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Projects Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Recycling Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Religion and Life Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Repairs Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Scholar Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Scientist Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Secret Codes Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Showman Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Signalling Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Simple Machines Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Singing Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Skies Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Sleep Out Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Sportsman Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Swimmer Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Traveller Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 Working Toys Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎨 World Friendship Badge</Text>
+        <Text style={styles.cardText}>Status: Not started</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Log progress</Text>
+        </TouchableOpacity>
+      </View>
+
+
+
 
       <Text style={styles.note}>
         More badges will be added later. Leaders will be able to approve submissions.
