@@ -34,6 +34,13 @@ export default function Layout() {
         }}
       />
       <Tabs.Screen
+        name="approve"
+        options={{
+          title: 'Approve',
+          tabBarIcon: () => <Text>✅</Text>,
+        }}
+      />
+      <Tabs.Screen
         name="account"
         options={{
           title: 'Account',

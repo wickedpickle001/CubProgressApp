@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -59,6 +60,7 @@ const BADGES = [
   '🎨 Recycling Badge',
   '🎨 Religion and Life Badge',
   '🎨 Repairs Badge',
+  '🎨 Repairs Badge',
   '🎨 Scholar Badge',
   '🎨 Scientist Badge',
   '🎨 Secret Codes Badge',
@@ -81,9 +83,11 @@ export default function BadgesScreen() {
   const [evidence, setEvidence] = useState('');
   const [submissions, setSubmissions] = useState<any[]>([]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   async function loadData() {
     const { data: sessionData } = await supabase.auth.getSession();
