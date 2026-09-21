@@ -1,18 +1,38 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Tabs } from 'expo-router';
+import { Text } from 'react-native';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
-
-SplashScreen.preventAutoHideAsync();
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function Layout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <Tabs
+      screenOptions={{
+        headerStyle: { backgroundColor: '#1a3c34' },
+        headerTintColor: '#ffffff',
+        tabBarStyle: { backgroundColor: '#1a3c34' },
+        tabBarActiveTintColor: '#ffd700',
+        tabBarInactiveTintColor: '#a8d5c0',
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: () => <Text>🏠</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="advancements"
+        options={{
+          title: 'Advancements',
+          tabBarIcon: () => <Text>🐺</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="badges"
+        options={{
+          title: 'Badges',
+          tabBarIcon: () => <Text>🏅</Text>,
+        }}
+      />
+    </Tabs>
   );
 }
