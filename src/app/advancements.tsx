@@ -8,14 +8,14 @@ export default function AdvancementsScreen() {
       {/* Silver Wolf */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>🥈 Silver Wolf</Text>
-        <Text style={styles.cardText}>First major stage</Text>
+        <Text style={styles.cardText}>Awareness,Community,Outdoor,Aptitude</Text>
         <Text style={styles.status}>Status: Not started</Text>
       </View>
 
       {/* Gold Wolf */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>🥇 Gold Wolf</Text>
-        <Text style={styles.cardText}>Second major stage</Text>
+        <Text style={styles.cardText}>Awareness,Community,Outdoor,Aptitude</Text>
         <Text style={styles.status}>Status: Not started</Text>
       </View>
 
@@ -23,6 +23,13 @@ export default function AdvancementsScreen() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>🐺 Leaping Wolf</Text>
         <Text style={styles.cardText}>Final Cub stage</Text>
+        <Text style={styles.status}>Status: Not started</Text>
+      </View>
+
+      {/* Link Badge */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🥇 Link Badge</Text>
+        <Text style={styles.cardText}>Awareness,Community,Outdoor,Aptitude</Text>
         <Text style={styles.status}>Status: Not started</Text>
       </View>
     </ScrollView>
