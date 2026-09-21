@@ -33,6 +33,13 @@ export default function Layout() {
           tabBarIcon: () => <Text>🏅</Text>,
         }}
       />
+      <Tabs.Screen
+        name="account"
+        options={{
+          title: 'Account',
+          tabBarIcon: () => <Text>👤</Text>,
+        }}
+      />
     </Tabs>
   );
 }
