@@ -34,17 +34,17 @@ export default function Layout() {
         }}
       />
       <Tabs.Screen
-        name="users"
-        options={{
-          title: 'Users',
-          tabBarIcon: () => <Text>👥</Text>,
-        }}
-      />
-      <Tabs.Screen
         name="account"
         options={{
           title: 'Account',
           tabBarIcon: () => <Text>👤</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="users"
+        options={{
+          href: null,
+          title: 'Users',
         }}
       />
       <Tabs.Screen

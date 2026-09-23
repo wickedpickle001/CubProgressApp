@@ -1,4 +1,5 @@
 import type { Session } from '@supabase/supabase-js';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Alert,
@@ -11,6 +12,7 @@ import {
 import { supabase } from '../lib/supabase';
 
 export default function AccountScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -89,6 +91,13 @@ export default function AccountScreen() {
         <Text style={styles.title}>You are signed in</Text>
         <Text style={styles.subtitle}>{session.user.email}</Text>
         <Text style={styles.role}>Role: {role}</Text>
+
+        {role === 'admin' && (
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/users')}>
+            <Text style={styles.buttonText}>Manage users</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity style={styles.button} onPress={signOut}>
           <Text style={styles.buttonText}>Sign Out</Text>
         </TouchableOpacity>
