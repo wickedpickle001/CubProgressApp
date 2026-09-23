@@ -53,6 +53,15 @@ export default function Layout() {
           href: null,
         }}
       />
+
+            <Tabs.Screen
+        name="badge/[name]"
+        options={{
+          href: null,
+          title: 'Badge',
+        }}
+      />
+
     </Tabs>
   );
 }

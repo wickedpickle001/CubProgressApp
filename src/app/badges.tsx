@@ -1,14 +1,11 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   Alert,
-  Linking,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+  TouchableOpacity
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 
@@ -75,26 +72,12 @@ const BADGES = [
   '🎨 Traveller Badge',
   '🎨 Working Toys Badge',
   '🎨 World Friendship Badge',
-];
 
-const REQUIREMENTS: Record<string, { officialUrl: string; items: string[] }> = {
-  '🏕️ Aircraft Badge': {
-    officialUrl: 'https://scoutwiki.scouts.org.za/wiki/Cub_Aircraft_Badge',
-    items: [
-      'Requirement 1: Identify different aircraft',
-      'Requirement 2: Make and fly a model aircraft',
-      'Requirement 3: Sketch and label aircraft parts',
-      'Requirement 4: Sketch and label an airfield',
-    ],
-  },
-};
-
-export default function BadgesScreen() {
+];export default function BadgesScreen() {
+  const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
-  const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
-  const [evidence, setEvidence] = useState('');
-  const [doneItems, setDoneItems] = useState<Record<string, boolean>>({});
-  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [progressCount, setProgressCount] = useState<Record<string, number>>({});
+  const [statusByBadge, setStatusByBadge] = useState<Record<string, string>>({});
 
   useFocusEffect(
     useCallback(() => {
@@ -112,9 +95,22 @@ export default function BadgesScreen() {
 
     setUserId(user.id);
 
-    const { data, error } = await supabase
+    const { data: progress } = await supabase
+      .from('badge_progress')
+      .select('badge_name, completed')
+      .eq('user_id', user.id);
+
+    const counts: Record<string, number> = {};
+    progress?.forEach((row) => {
+      if (row.completed) {
+        counts[row.badge_name] = (counts[row.badge_name] || 0) + 1;
+      }
+    });
+    setProgressCount(counts);
+
+    const { data: submissions, error } = await supabase
       .from('badge_submissions')
-      .select('*')
+      .select('badge_name, status')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -123,108 +119,43 @@ export default function BadgesScreen() {
       return;
     }
 
-    setSubmissions(data || []);
-  }
-
-  function getStatus(badgeName: string) {
-    const match = submissions.find((item) => item.badge_name === badgeName);
-    return match ? match.status : 'Not started';
-  }
-
-  function toggleItem(item: string) {
-    setDoneItems((prev) => ({ ...prev, [item]: !prev[item] }));
-  }
-
-  async function submitEvidence(badgeName: string) {
-    if (!userId) {
-      Alert.alert('Please sign in', 'Use the Account tab first.');
-      return;
-    }
-
-    if (!evidence.trim()) {
-      Alert.alert('Missing evidence', 'Type what the cub did first.');
-      return;
-    }
-
-    const completed = Object.keys(doneItems).filter((key) => doneItems[key]);
-    const fullEvidence =
-      evidence +
-      (completed.length ? `\n\nTicked:\n- ${completed.join('\n- ')}` : '');
-
-    const { error } = await supabase.from('badge_submissions').insert({
-      user_id: userId,
-      badge_name: badgeName,
-      evidence_text: fullEvidence,
-      status: 'pending',
+    const statuses: Record<string, string> = {};
+    submissions?.forEach((row) => {
+      if (!statuses[row.badge_name]) {
+        statuses[row.badge_name] = row.status;
+      }
     });
+    setStatusByBadge(statuses);
+  }
 
-    if (error) {
-      Alert.alert('Could not submit', error.message);
-      return;
-    }
-
-    setEvidence('');
-    setSelectedBadge(null);
-    Alert.alert('Submitted', `${badgeName} has been sent for approval.`);
-    loadData();
+  function statusText(badge: string) {
+    if (statusByBadge[badge]) return statusByBadge[badge];
+    if (progressCount[badge]) return `${progressCount[badge]} requirement(s) saved`;
+    return 'Not started';
   }
 
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.heading}>Interest Badges</Text>
-      <Text style={styles.subheading}>Log your evidence and submit for approval</Text>
+      <Text style={styles.subheading}>Tap a badge to add evidence and save progress</Text>
+      {!userId && <Text style={styles.note}>Sign in to save your progress.</Text>}
 
-      {BADGES.map((badge, index) => {
-        const info = REQUIREMENTS[badge];
-
-        return (
-          <View key={`${index}-${badge}`} style={styles.card}>
-            <Text style={styles.cardTitle}>{badge}</Text>
-            <Text style={styles.cardText}>Status: {getStatus(badge)}</Text>
-
-            {selectedBadge === badge ? (
-              <>
-                {info?.items.map((item) => (
-                  <TouchableOpacity
-                    key={item}
-                    style={styles.requirement}
-                    onPress={() => toggleItem(item)}
-                  >
-                    <Text style={styles.requirementText}>
-                      {doneItems[item] ? '☑' : '☐'} {item}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-
-                {info?.officialUrl && (
-                  <TouchableOpacity onPress={() => Linking.openURL(info.officialUrl)}>
-                    <Text style={styles.link}>View official requirements</Text>
-                  </TouchableOpacity>
-                )}
-
-                <TextInput
-                  style={styles.input}
-                  placeholder="Type the evidence here"
-                  placeholderTextColor="#88b8a8"
-                  multiline
-                  value={evidence}
-                  onChangeText={setEvidence}
-                />
-                <TouchableOpacity style={styles.button} onPress={() => submitEvidence(badge)}>
-                  <Text style={styles.buttonText}>Submit for approval</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setSelectedBadge(null)}>
-                  <Text style={styles.cancelText}>Cancel</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <TouchableOpacity style={styles.button} onPress={() => setSelectedBadge(badge)}>
-                <Text style={styles.buttonText}>Log progress</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        );
-      })}
+      {BADGES.map((badge, index) => (
+        <TouchableOpacity
+          key={`${index}-${badge}`}
+          style={styles.card}
+                    onPress={() =>
+  router.push({
+    pathname: '/badge/[name]',
+    params: { name: badge.replace(/^[^A-Za-z]+/, '').replace(/\s+/g, '-').toLowerCase() },
+  })
+}
+        >
+          <Text style={styles.cardTitle}>{badge}</Text>
+          <Text style={styles.cardText}>Status: {statusText(badge)}</Text>
+          <Text style={styles.open}>Open →</Text>
+        </TouchableOpacity>
+      ))}
     </ScrollView>
   );
 }
@@ -245,8 +176,13 @@ const styles = StyleSheet.create({
   subheading: {
     fontSize: 14,
     color: '#a8d5c0',
-    marginBottom: 24,
+    marginBottom: 16,
     textAlign: 'center',
+  },
+  note: {
+    color: '#ffd700',
+    textAlign: 'center',
+    marginBottom: 16,
   },
   card: {
     backgroundColor: '#2a5a4a',
@@ -263,44 +199,10 @@ const styles = StyleSheet.create({
   cardText: {
     fontSize: 15,
     color: '#a8d5c0',
-    marginBottom: 12,
-  },
-  requirement: {
     marginBottom: 8,
   },
-  requirementText: {
-    color: '#ffffff',
-    fontSize: 14,
-  },
-  link: {
+  open: {
     color: '#ffd700',
-    marginBottom: 12,
-    fontWeight: 'bold',
-  },
-  input: {
-    backgroundColor: '#1a3c34',
-    color: '#ffffff',
-    borderRadius: 10,
-    padding: 12,
-    minHeight: 80,
-    textAlignVertical: 'top',
-    marginBottom: 12,
-  },
-  button: {
-    backgroundColor: '#ffd700',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  buttonText: {
-    color: '#1a3c34',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  cancelText: {
-    color: '#ffd700',
-    marginTop: 10,
     fontWeight: 'bold',
   },
 });
