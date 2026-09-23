@@ -1,17 +1,17 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 
 export default function ApproveScreen() {
-  const [isLeader, setIsLeader] = useState(false);
+  const [canApprove, setCanApprove] = useState(false);
   const [items, setItems] = useState<any[]>([]);
 
   useFocusEffect(
@@ -24,7 +24,7 @@ export default function ApproveScreen() {
     const { data: sessionData } = await supabase.auth.getSession();
     const user = sessionData.session?.user;
     if (!user) {
-      setIsLeader(false);
+      setCanApprove(false);
       return;
     }
 
@@ -36,16 +36,13 @@ export default function ApproveScreen() {
 
     if (profileError) {
       Alert.alert('Profile error', profileError.message);
-      setIsLeader(false);
+      setCanApprove(false);
       return;
     }
 
-    if (profile?.role !== 'leader') {
-      setIsLeader(false);
-      return;
-    }
-
-    setIsLeader(true);
+    const allowed = profile?.role === 'leader' || profile?.role === 'admin';
+    setCanApprove(allowed);
+    if (!allowed) return;
 
     const { data, error } = await supabase
       .from('badge_submissions')
@@ -75,12 +72,12 @@ export default function ApproveScreen() {
     loadData();
   }
 
-  if (!isLeader) {
+  if (!canApprove) {
     return (
       <View style={styles.center}>
-        <Text style={styles.title}>Leaders only</Text>
+        <Text style={styles.title}>Leaders and admin only</Text>
         <Text style={styles.subtitle}>
-          Sign in on the Account tab and choose the Leader role.
+          A main admin must assign you the Leader role before you can approve badges.
         </Text>
       </View>
     );
@@ -145,6 +142,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ffffff',
     marginBottom: 8,
+    textAlign: 'center',
   },
   subtitle: {
     color: '#a8d5c0',

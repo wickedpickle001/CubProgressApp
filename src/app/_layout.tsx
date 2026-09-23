@@ -20,13 +20,6 @@ export default function Layout() {
         }}
       />
       <Tabs.Screen
-        name="advancements"
-        options={{
-          title: 'Advancements',
-          tabBarIcon: () => <Text>🐺</Text>,
-        }}
-      />
-      <Tabs.Screen
         name="badges"
         options={{
           title: 'Badges',
@@ -41,10 +34,23 @@ export default function Layout() {
         }}
       />
       <Tabs.Screen
+        name="users"
+        options={{
+          title: 'Users',
+          tabBarIcon: () => <Text>👥</Text>,
+        }}
+      />
+      <Tabs.Screen
         name="account"
         options={{
           title: 'Account',
           tabBarIcon: () => <Text>👤</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

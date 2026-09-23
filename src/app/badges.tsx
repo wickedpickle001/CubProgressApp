@@ -2,6 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   Alert,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -60,7 +61,6 @@ const BADGES = [
   '🎨 Recycling Badge',
   '🎨 Religion and Life Badge',
   '🎨 Repairs Badge',
-  '🎨 Repairs Badge',
   '🎨 Scholar Badge',
   '🎨 Scientist Badge',
   '🎨 Secret Codes Badge',
@@ -77,10 +77,23 @@ const BADGES = [
   '🎨 World Friendship Badge',
 ];
 
+const REQUIREMENTS: Record<string, { officialUrl: string; items: string[] }> = {
+  '🏕️ Aircraft Badge': {
+    officialUrl: 'https://scoutwiki.scouts.org.za/wiki/Cub_Aircraft_Badge',
+    items: [
+      'Requirement 1: Identify different aircraft',
+      'Requirement 2: Make and fly a model aircraft',
+      'Requirement 3: Sketch and label aircraft parts',
+      'Requirement 4: Sketch and label an airfield',
+    ],
+  },
+};
+
 export default function BadgesScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
   const [evidence, setEvidence] = useState('');
+  const [doneItems, setDoneItems] = useState<Record<string, boolean>>({});
   const [submissions, setSubmissions] = useState<any[]>([]);
 
   useFocusEffect(
@@ -118,6 +131,10 @@ export default function BadgesScreen() {
     return match ? match.status : 'Not started';
   }
 
+  function toggleItem(item: string) {
+    setDoneItems((prev) => ({ ...prev, [item]: !prev[item] }));
+  }
+
   async function submitEvidence(badgeName: string) {
     if (!userId) {
       Alert.alert('Please sign in', 'Use the Account tab first.');
@@ -129,10 +146,15 @@ export default function BadgesScreen() {
       return;
     }
 
+    const completed = Object.keys(doneItems).filter((key) => doneItems[key]);
+    const fullEvidence =
+      evidence +
+      (completed.length ? `\n\nTicked:\n- ${completed.join('\n- ')}` : '');
+
     const { error } = await supabase.from('badge_submissions').insert({
       user_id: userId,
       badge_name: badgeName,
-      evidence_text: evidence,
+      evidence_text: fullEvidence,
       status: 'pending',
     });
 
@@ -152,35 +174,57 @@ export default function BadgesScreen() {
       <Text style={styles.heading}>Interest Badges</Text>
       <Text style={styles.subheading}>Log your evidence and submit for approval</Text>
 
-      {BADGES.map((badge) => (
-        <View key={badge} style={styles.card}>
-          <Text style={styles.cardTitle}>{badge}</Text>
-          <Text style={styles.cardText}>Status: {getStatus(badge)}</Text>
+      {BADGES.map((badge, index) => {
+        const info = REQUIREMENTS[badge];
 
-          {selectedBadge === badge ? (
-            <>
-              <TextInput
-                style={styles.input}
-                placeholder="Type the evidence here"
-                placeholderTextColor="#88b8a8"
-                multiline
-                value={evidence}
-                onChangeText={setEvidence}
-              />
-              <TouchableOpacity style={styles.button} onPress={() => submitEvidence(badge)}>
-                <Text style={styles.buttonText}>Submit for approval</Text>
+        return (
+          <View key={`${index}-${badge}`} style={styles.card}>
+            <Text style={styles.cardTitle}>{badge}</Text>
+            <Text style={styles.cardText}>Status: {getStatus(badge)}</Text>
+
+            {selectedBadge === badge ? (
+              <>
+                {info?.items.map((item) => (
+                  <TouchableOpacity
+                    key={item}
+                    style={styles.requirement}
+                    onPress={() => toggleItem(item)}
+                  >
+                    <Text style={styles.requirementText}>
+                      {doneItems[item] ? '☑' : '☐'} {item}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+
+                {info?.officialUrl && (
+                  <TouchableOpacity onPress={() => Linking.openURL(info.officialUrl)}>
+                    <Text style={styles.link}>View official requirements</Text>
+                  </TouchableOpacity>
+                )}
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Type the evidence here"
+                  placeholderTextColor="#88b8a8"
+                  multiline
+                  value={evidence}
+                  onChangeText={setEvidence}
+                />
+                <TouchableOpacity style={styles.button} onPress={() => submitEvidence(badge)}>
+                  <Text style={styles.buttonText}>Submit for approval</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setSelectedBadge(null)}>
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity style={styles.button} onPress={() => setSelectedBadge(badge)}>
+                <Text style={styles.buttonText}>Log progress</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setSelectedBadge(null)}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <TouchableOpacity style={styles.button} onPress={() => setSelectedBadge(badge)}>
-              <Text style={styles.buttonText}>Log progress</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      ))}
+            )}
+          </View>
+        );
+      })}
     </ScrollView>
   );
 }
@@ -220,6 +264,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#a8d5c0',
     marginBottom: 12,
+  },
+  requirement: {
+    marginBottom: 8,
+  },
+  requirementText: {
+    color: '#ffffff',
+    fontSize: 14,
+  },
+  link: {
+    color: '#ffd700',
+    marginBottom: 12,
+    fontWeight: 'bold',
   },
   input: {
     backgroundColor: '#1a3c34',

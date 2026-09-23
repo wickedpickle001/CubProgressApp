@@ -21,16 +21,12 @@ export default function AccountScreen() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      if (data.session?.user) {
-        loadProfile(data.session.user.id);
-      }
+      if (data.session?.user) loadProfile(data.session.user.id);
     });
 
     const { data } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
-      if (newSession?.user) {
-        loadProfile(newSession.user.id);
-      }
+      if (newSession?.user) loadProfile(newSession.user.id);
     });
 
     return () => {
@@ -51,18 +47,6 @@ export default function AccountScreen() {
     }
   }
 
-  async function saveProfile(userId: string) {
-    const { error } = await supabase.from('profiles').upsert({
-      id: userId,
-      full_name: fullName || email,
-      role,
-    });
-
-    if (error) {
-      Alert.alert('Profile error', error.message);
-    }
-  }
-
   async function signUp() {
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({ email, password });
@@ -74,7 +58,17 @@ export default function AccountScreen() {
     }
 
     if (data.user) {
-      await saveProfile(data.user.id);
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id: data.user.id,
+        full_name: fullName || email,
+        role: 'cub',
+      });
+
+      if (profileError) {
+        Alert.alert('Profile error', profileError.message);
+      } else {
+        Alert.alert('Account created', 'You are registered as a Cub. An admin can change this later.');
+      }
     }
   }
 
@@ -89,37 +83,12 @@ export default function AccountScreen() {
     await supabase.auth.signOut();
   }
 
-  async function updateRole(nextRole: string) {
-    setRole(nextRole);
-    if (session?.user) {
-      const { error } = await supabase.from('profiles').upsert({
-        id: session.user.id,
-        full_name: fullName || session.user.email,
-        role: nextRole,
-      });
-      if (error) Alert.alert('Could not save role', error.message);
-    }
-  }
-
   if (session) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>You are signed in</Text>
         <Text style={styles.subtitle}>{session.user.email}</Text>
-
-        <Text style={styles.label}>I am a</Text>
-        <View style={styles.row}>
-          {['cub', 'parent', 'leader'].map((item) => (
-            <TouchableOpacity
-              key={item}
-              style={[styles.chip, role === item && styles.chipActive]}
-              onPress={() => updateRole(item)}
-            >
-              <Text style={styles.chipText}>{item}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
+        <Text style={styles.role}>Role: {role}</Text>
         <TouchableOpacity style={styles.button} onPress={signOut}>
           <Text style={styles.buttonText}>Sign Out</Text>
         </TouchableOpacity>
@@ -130,7 +99,7 @@ export default function AccountScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Account</Text>
-      <Text style={styles.subtitle}>Cubs, parents and leaders sign in here</Text>
+      <Text style={styles.subtitle}>Register or sign in. New accounts start as Cubs.</Text>
 
       <TextInput
         style={styles.input}
@@ -158,19 +127,6 @@ export default function AccountScreen() {
         value={password}
         onChangeText={setPassword}
       />
-
-      <Text style={styles.label}>I am a</Text>
-      <View style={styles.row}>
-        {['cub', 'parent', 'leader'].map((item) => (
-          <TouchableOpacity
-            key={item}
-            style={[styles.chip, role === item && styles.chipActive]}
-            onPress={() => setRole(item)}
-          >
-            <Text style={styles.chipText}>{item}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
 
       <TouchableOpacity style={styles.button} onPress={signIn} disabled={loading}>
         <Text style={styles.buttonText}>{loading ? 'Please wait...' : 'Sign In'}</Text>
@@ -203,27 +159,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
   },
-  label: {
-    color: '#ffffff',
-    marginBottom: 8,
-    fontWeight: 'bold',
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  chip: {
-    backgroundColor: '#2a5a4a',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  chipActive: {
-    backgroundColor: '#ffd700',
-  },
-  chipText: {
-    color: '#1a3c34',
+  role: {
+    color: '#ffd700',
+    textAlign: 'center',
+    marginBottom: 20,
     fontWeight: 'bold',
     textTransform: 'capitalize',
   },
