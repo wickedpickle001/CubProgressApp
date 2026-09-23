@@ -103,6 +103,24 @@ const SPECIAL_REQUIREMENTS: Record<string, string[]> = {
   ],
 };
 
+async function requireApprovedPack(userId: string) {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('pack_status')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (profile?.pack_status !== 'approved') {
+    Alert.alert(
+      'Waiting for pack approval',
+      'A leader from your pack must accept you before you can save or submit badges.'
+    );
+    return false;
+  }
+
+  return true;
+}
+
 export default function BadgeDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ name: string }>();
@@ -218,6 +236,8 @@ export default function BadgeDetailScreen() {
       return;
     }
 
+    if (!(await requireApprovedPack(userId))) return;
+
     setSaving(true);
 
     const rows = requirements.map((item) => ({
@@ -250,6 +270,8 @@ export default function BadgeDetailScreen() {
       Alert.alert('Please sign in', 'Use the Account tab first.');
       return;
     }
+
+    if (!(await requireApprovedPack(userId))) return;
 
     const evidence = requirements
       .map((item) => {

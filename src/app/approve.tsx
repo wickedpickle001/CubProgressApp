@@ -2,6 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -44,7 +45,7 @@ export default function ApproveScreen() {
     setCanApprove(allowed);
     if (!allowed) return;
 
-    const { data, error } = await supabase
+    const { data: submissions, error } = await supabase
       .from('badge_submissions')
       .select('*')
       .eq('status', 'pending')
@@ -55,7 +56,28 @@ export default function ApproveScreen() {
       return;
     }
 
-    setItems(data || []);
+    const withDetails = [];
+    for (const submission of submissions || []) {
+      const { data: cub } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', submission.user_id)
+        .maybeSingle();
+
+      const { data: progress } = await supabase
+        .from('badge_progress')
+        .select('requirement_key, evidence_text, completed, photo_data')
+        .eq('user_id', submission.user_id)
+        .eq('badge_name', submission.badge_name);
+
+      withDetails.push({
+        ...submission,
+        cubName: cub?.full_name || 'Unknown cub',
+        progress: progress || [],
+      });
+    }
+
+    setItems(withDetails);
   }
 
   async function updateStatus(id: number, status: string) {
@@ -93,9 +115,24 @@ export default function ApproveScreen() {
 
       {items.map((item) => (
         <View key={item.id} style={styles.card}>
+          <Text style={styles.cubName}>Cub: {item.cubName}</Text>
           <Text style={styles.cardTitle}>{item.badge_name}</Text>
           <Text style={styles.cardText}>{item.evidence_text}</Text>
           <Text style={styles.status}>Status: {item.status}</Text>
+
+          {item.progress.map((row: any) => (
+            <View key={row.requirement_key} style={styles.requirement}>
+              <Text style={styles.requirementTitle}>
+                {row.completed ? '☑' : '☐'} {row.requirement_key}
+              </Text>
+              {!!row.evidence_text && (
+                <Text style={styles.cardText}>{row.evidence_text}</Text>
+              )}
+              {!!row.photo_data && (
+                <Image source={{ uri: row.photo_data }} style={styles.photo} />
+              )}
+            </View>
+          ))}
 
           <View style={styles.row}>
             <TouchableOpacity
@@ -154,6 +191,11 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
+  cubName: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -168,6 +210,20 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontStyle: 'italic',
     marginBottom: 12,
+  },
+  requirement: {
+    marginBottom: 12,
+  },
+  requirementTitle: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
+  photo: {
+    width: '100%',
+    height: 160,
+    borderRadius: 8,
+    marginTop: 6,
   },
   row: {
     flexDirection: 'row',

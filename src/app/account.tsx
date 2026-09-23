@@ -11,12 +11,16 @@ import {
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 
+const PACKS = ['11th PMB', '4th PMB', '1st Howick'];
+
 export default function AccountScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [packName, setPackName] = useState('');
   const [role, setRole] = useState('cub');
+  const [packStatus, setPackStatus] = useState('pending');
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
 
@@ -39,17 +43,24 @@ export default function AccountScreen() {
   async function loadProfile(userId: string) {
     const { data } = await supabase
       .from('profiles')
-      .select('full_name, role')
+      .select('full_name, role, pack_name, pack_status')
       .eq('id', userId)
       .maybeSingle();
 
     if (data) {
       setFullName(data.full_name || '');
       setRole(data.role || 'cub');
+      setPackName(data.pack_name || '');
+      setPackStatus(data.pack_status || 'pending');
     }
   }
 
   async function signUp() {
+    if (!packName) {
+      Alert.alert('Choose a pack', 'Select 11th PMB, 4th PMB or 1st Howick.');
+      return;
+    }
+
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({ email, password });
     setLoading(false);
@@ -64,12 +75,17 @@ export default function AccountScreen() {
         id: data.user.id,
         full_name: fullName || email,
         role: 'cub',
+        pack_name: packName,
+        pack_status: 'pending',
       });
 
       if (profileError) {
         Alert.alert('Profile error', profileError.message);
       } else {
-        Alert.alert('Account created', 'You are registered as a Cub. An admin can change this later.');
+        Alert.alert(
+          'Account created',
+          'You are pending. A leader from that pack must accept you before you can use the pack features.'
+        );
       }
     }
   }
@@ -91,10 +107,12 @@ export default function AccountScreen() {
         <Text style={styles.title}>You are signed in</Text>
         <Text style={styles.subtitle}>{session.user.email}</Text>
         <Text style={styles.role}>Role: {role}</Text>
+        <Text style={styles.role}>Pack: {packName || 'Not set'}</Text>
+        <Text style={styles.role}>Pack access: {packStatus}</Text>
 
-        {role === 'admin' && (
+        {(role === 'admin' || role === 'leader') && (
           <TouchableOpacity style={styles.button} onPress={() => router.push('/users')}>
-            <Text style={styles.buttonText}>Manage users</Text>
+            <Text style={styles.buttonText}>Manage pack</Text>
           </TouchableOpacity>
         )}
 
@@ -108,7 +126,7 @@ export default function AccountScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Account</Text>
-      <Text style={styles.subtitle}>Register or sign in. New accounts start as Cubs.</Text>
+      <Text style={styles.subtitle}>Choose your pack. A leader will accept you.</Text>
 
       <TextInput
         style={styles.input}
@@ -136,6 +154,19 @@ export default function AccountScreen() {
         value={password}
         onChangeText={setPassword}
       />
+
+      <Text style={styles.label}>My pack</Text>
+      <View style={styles.row}>
+        {PACKS.map((pack) => (
+          <TouchableOpacity
+            key={pack}
+            style={[styles.packButton, packName === pack && styles.packActive]}
+            onPress={() => setPackName(pack)}
+          >
+            <Text style={styles.packText}>{pack}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       <TouchableOpacity style={styles.button} onPress={signIn} disabled={loading}>
         <Text style={styles.buttonText}>{loading ? 'Please wait...' : 'Sign In'}</Text>
@@ -171,9 +202,32 @@ const styles = StyleSheet.create({
   role: {
     color: '#ffd700',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 8,
     fontWeight: 'bold',
-    textTransform: 'capitalize',
+  },
+  label: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  packButton: {
+    backgroundColor: '#2a5a4a',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  packActive: {
+    backgroundColor: '#ffd700',
+  },
+  packText: {
+    color: '#1a3c34',
+    fontWeight: 'bold',
   },
   input: {
     backgroundColor: '#2a5a4a',
