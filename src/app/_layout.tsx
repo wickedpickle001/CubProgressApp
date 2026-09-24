@@ -17,6 +17,7 @@ export default function Layout() {
       <Tabs.Screen name="cubs" options={{ title: 'Friends', tabBarIcon: () => <Text>👥</Text> }} />
       <Tabs.Screen name="badges" options={{ title: 'Badges', tabBarIcon: () => <Text>🏅</Text> }} />
       <Tabs.Screen name="account" options={{ title: 'Account', tabBarIcon: () => <Text>👤</Text> }} />
+      <Tabs.Screen name="avatar" options={{ href: null, title: 'Avatar' }} />
       <Tabs.Screen name="approve" options={{ href: null, title: 'Approve' }} />
       <Tabs.Screen name="users" options={{ href: null, title: 'Users' }} />
       <Tabs.Screen name="badge/[name]" options={{ href: null, title: 'Badge' }} />
