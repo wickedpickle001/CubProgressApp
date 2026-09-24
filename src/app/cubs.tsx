@@ -49,6 +49,9 @@ export default function CubsScreen() {
     >
       <ScrollView style={styles.container}>
         <Text style={styles.heading}>Pack friends</Text>
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/avatar')}>
+          <Text style={styles.buttonText}>Choose my avatar</Text>
+        </TouchableOpacity>
         {cubs.map((cub) => (
           <TouchableOpacity
             key={cub.id}
@@ -79,6 +82,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
+  button: {
+    backgroundColor: '#ffd700',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  buttonText: { color: '#1a3c34', fontWeight: 'bold' },
   card: {
     backgroundColor: '#2a5a4a',
     borderRadius: 12,
