@@ -10,7 +10,7 @@ import {
 
 type Mode = 'menu' | 'memory' | 'tap' | 'scramble' | 'trail' | 'done';
 
-const FACES = ['\uD83D\uDC3A', '\uD83E\uDD81', '\uD83D\uDC3B', '\uD83E\uDD89', '\uD83E\uDD8A', '\uD83D\uDC30', '\uD83D\uDC3C', '\uD83E\uDD86'];
+const FACES = ['Wolf', 'Lion', 'Bear', 'Owl', 'Fox', 'Rabbit', 'Panda', 'Duck'];
 const MEMORY_SIZES = [3, 4, 6];
 
 const SENTENCES = [
@@ -43,9 +43,9 @@ function shuffle<T>(list: T[]) {
 }
 
 function starsFor(score: number) {
-  if (score >= 80) return '\u2B50\u2B50\u2B50';
-  if (score >= 40) return '\u2B50\u2B50';
-  return '\u2B50';
+  if (score >= 80) return 'Three stars';
+  if (score >= 40) return 'Two stars';
+  return 'One star';
 }
 
 export default function GamesScreen() {
@@ -59,12 +59,14 @@ export default function GamesScreen() {
   const [cards, setCards] = useState<{ id: number; face: string; open: boolean; done: boolean }[]>([]);
   const [moves, setMoves] = useState(0);
   const lock = useRef(false);
+  const scoreRef = useRef(0);
 
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [paw, setPaw] = useState({ top: 40, left: 40 });
-  const [rocks, setRocks] = useState<{ id: number; top: number; left: number }[]>([]);
+  const [timeLeft, setTimeLeft] = useState(20);
+  const [showPaw, setShowPaw] = useState(true);
   const [combo, setCombo] = useState(0);
+  const [tapNote, setTapNote] = useState('Tap only when it says PAW');
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
+  const playing = useRef(false);
 
   const [sentenceIndex, setSentenceIndex] = useState(0);
   const [pool, setPool] = useState<string[]>([]);
@@ -79,15 +81,22 @@ export default function GamesScreen() {
     };
   }, []);
 
+  function setPoints(next: number) {
+    scoreRef.current = next;
+    setScore(next);
+  }
+
   function finish(game: string, finalScore: number) {
+    playing.current = false;
     if (tick.current) clearInterval(tick.current);
     setBest((prev) => ({ ...prev, [game]: Math.max(prev[game] || 0, finalScore) }));
-    setScore(finalScore);
+    setPoints(finalScore);
     setTitle(game);
     setMode('done');
   }
 
   function goMenu() {
+    playing.current = false;
     if (tick.current) clearInterval(tick.current);
     lock.current = false;
     setMode('menu');
@@ -107,7 +116,7 @@ export default function GamesScreen() {
     setLevel(nextLevel);
     setMoves(0);
     setLives(3);
-    if (nextLevel === 0) setScore(0);
+    if (nextLevel === 0) setPoints(0);
     lock.current = false;
     setMode('memory');
   }
@@ -133,77 +142,68 @@ export default function GamesScreen() {
           item.face === a.face ? { ...item, done: true, open: true } : item
         );
         setCards(matched);
-        setScore((n) => n + 10);
+        setPoints(scoreRef.current + 10);
         lock.current = false;
         if (matched.every((item) => item.done)) {
           if (level < MEMORY_SIZES.length - 1) {
             setTimeout(() => startMemory(level + 1), 400);
           } else {
-            finish('Paw memory', score + 10 + lives * 5);
+            finish('Paw memory', scoreRef.current + lives * 5);
           }
         }
       } else {
         setCards((prev) =>
           prev.map((item) => (item.id === a.id || item.id === b.id ? { ...item, open: false } : item))
         );
-        setLives((n) => {
-          const left = n - 1;
-          if (left <= 0) finish('Paw memory', score);
-          return left;
-        });
+        const left = lives - 1;
+        setLives(left);
         lock.current = false;
+        if (left <= 0) finish('Paw memory', scoreRef.current);
       }
     }, 650);
   }
 
-  function placePaw() {
-    setPaw({
-      top: 20 + Math.floor(Math.random() * 180),
-      left: 20 + Math.floor(Math.random() * 180),
-    });
-    setRocks(
-      Array.from({ length: 2 }, (_, id) => ({
-        id,
-        top: 20 + Math.floor(Math.random() * 180),
-        left: 20 + Math.floor(Math.random() * 180),
-      }))
-    );
+  function nextTarget() {
+    setShowPaw(Math.random() > 0.35);
   }
 
   function startTap() {
-    setScore(0);
+    playing.current = true;
+    setPoints(0);
     setCombo(0);
-    setTimeLeft(30);
-    placePaw();
+    setTimeLeft(20);
+    setShowPaw(true);
+    setTapNote('Tap only when it says PAW');
     setMode('tap');
     if (tick.current) clearInterval(tick.current);
     tick.current = setInterval(() => {
       setTimeLeft((prev) => {
+        if (!playing.current) return prev;
         if (prev <= 1) {
+          playing.current = false;
           if (tick.current) clearInterval(tick.current);
+          finish('Do Your Best tap', scoreRef.current);
           return 0;
         }
         return prev - 1;
       });
-      placePaw();
-    }, 900);
+      if (playing.current) nextTarget();
+    }, 1000);
   }
 
-  useEffect(() => {
-    if (mode === 'tap' && timeLeft === 0) finish('Paw tap', score);
-  }, [timeLeft, mode]);
-
-  function hitPaw() {
-    const nextCombo = combo + 1;
-    setCombo(nextCombo);
-    setScore((n) => n + 1 + Math.floor(nextCombo / 3));
-    placePaw();
-  }
-
-  function hitRock() {
-    setCombo(0);
-    setScore((n) => Math.max(0, n - 2));
-    setLives((n) => n);
+  function pressTarget() {
+    if (!playing.current) return;
+    if (showPaw) {
+      const nextCombo = combo + 1;
+      setCombo(nextCombo);
+      setPoints(scoreRef.current + 2 + Math.floor(nextCombo / 3));
+      setTapNote('Good tap');
+    } else {
+      setCombo(0);
+      setPoints(Math.max(0, scoreRef.current - 2));
+      setTapNote('That was a rock. Wait for PAW.');
+    }
+    nextTarget();
   }
 
   function loadSentence(index: number) {
@@ -214,7 +214,7 @@ export default function GamesScreen() {
   }
 
   function startScramble() {
-    setScore(0);
+    setPoints(0);
     setLives(3);
     loadSentence(0);
     setMode('scramble');
@@ -226,12 +226,12 @@ export default function GamesScreen() {
   }
 
   useEffect(() => {
-    if (mode !== 'scramble' || pool.length > 0) return;
+    if (mode !== 'scramble' || pool.length > 0 || built.length === 0) return;
     const answer = SENTENCES[sentenceIndex].join(' ');
     const attempt = built.map((token) => token.split('#')[0]).join(' ');
     if (attempt === answer) {
-      const nextScore = score + 15;
-      setScore(nextScore);
+      const nextScore = scoreRef.current + 15;
+      setPoints(nextScore);
       if (sentenceIndex < SENTENCES.length - 1) {
         setTimeout(() => loadSentence(sentenceIndex + 1), 500);
       } else {
@@ -240,13 +240,13 @@ export default function GamesScreen() {
     } else {
       const left = lives - 1;
       setLives(left);
-      if (left <= 0) finish('Law scramble', score);
+      if (left <= 0) finish('Law scramble', scoreRef.current);
       else loadSentence(sentenceIndex);
     }
-  }, [pool, mode]);
+  }, [pool, built, mode]);
 
   function startTrail() {
-    setScore(0);
+    setPoints(0);
     setLives(3);
     setStep(0);
     setTrailNote('');
@@ -259,11 +259,11 @@ export default function GamesScreen() {
       const left = lives - 1;
       setLives(left);
       setTrailNote('Wrong path. Try again.');
-      if (left <= 0) finish('Trail walk', score);
+      if (left <= 0) finish('Trail walk', scoreRef.current);
       return;
     }
-    const nextScore = score + 12;
-    setScore(nextScore);
+    const nextScore = scoreRef.current + 12;
+    setPoints(nextScore);
     setTrailNote('Good path.');
     if (step < TRAIL.length - 1) setStep((n) => n + 1);
     else finish('Trail walk', nextScore + lives * 8);
@@ -275,11 +275,11 @@ export default function GamesScreen() {
       style={styles.background}
       imageStyle={styles.backgroundImage}
     >
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView scrollEnabled={mode !== 'tap'} contentContainerStyle={styles.container}>
         <Text style={styles.heading}>Cub Games</Text>
         {mode !== 'menu' && (
           <TouchableOpacity onPress={goMenu}>
-            <Text style={styles.back}>\u2190 Games menu</Text>
+            <Text style={styles.back}>Back to games</Text>
           </TouchableOpacity>
         )}
 
@@ -287,17 +287,15 @@ export default function GamesScreen() {
           <>
             <Text style={styles.meta}>Longer rounds. Levels, lives and a score.</Text>
             {[
-              ['Paw memory', 'Match pairs across 3 boards. 3 wrong guesses and you stop.', () => startMemory(0)],
-              ['Do Your Best tap', '30 seconds. The paw jumps. Rocks cost points.', startTap],
+              ['Paw memory', 'Match the animal names across 3 boards.', () => startMemory(0)],
+              ['Do Your Best tap', '20 seconds. Tap the big button only when it says PAW.', startTap],
               ['Law scramble', 'Six sentences, getting longer. A wrong order costs a life.', startScramble],
               ['Trail walk', 'Eight choices. Three wrong turns end the hike.', startTrail],
             ].map(([label, blurb, action]) => (
               <TouchableOpacity key={String(label)} style={styles.menuCard} onPress={action as () => void}>
                 <Text style={styles.cardTitle}>{label as string}</Text>
                 <Text style={styles.meta}>{blurb as string}</Text>
-                {!!best[label as string] && (
-                  <Text style={styles.best}>Best {best[label as string]}</Text>
-                )}
+                {!!best[label as string] && <Text style={styles.best}>Best {best[label as string]}</Text>}
               </TouchableOpacity>
             ))}
           </>
@@ -306,12 +304,12 @@ export default function GamesScreen() {
         {mode === 'memory' && (
           <>
             <Text style={styles.hud}>
-              Board {level + 1}/3 \u00b7 Moves {moves} \u00b7 Lives {'\u2764'.repeat(Math.max(lives, 0))} \u00b7 Score {score}
+              Board {level + 1} of 3. Moves {moves}. Lives {lives}. Score {score}
             </Text>
             <View style={styles.grid}>
               {cards.map((card) => (
                 <TouchableOpacity key={card.id} style={styles.memCard} onPress={() => flipCard(card.id)}>
-                  <Text style={styles.emoji}>{card.open || card.done ? card.face : '?'}</Text>
+                  <Text style={styles.face}>{card.open || card.done ? card.face : '?'}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -321,33 +319,23 @@ export default function GamesScreen() {
         {mode === 'tap' && (
           <View>
             <Text style={styles.hud}>
-              Time {timeLeft}s \u00b7 Combo {combo} \u00b7 Score {score}
+              Time {timeLeft}. Combo {combo}. Score {score}
             </Text>
-            <View style={styles.arena}>
-              <TouchableOpacity
-                style={[styles.mover, { top: paw.top, left: paw.left, backgroundColor: '#ffd700' }]}
-                onPress={hitPaw}
-              >
-                <Text style={styles.emoji}>\uD83D\uDC3E</Text>
-              </TouchableOpacity>
-              {rocks.map((rock) => (
-                <TouchableOpacity
-                  key={rock.id}
-                  style={[styles.mover, { top: rock.top, left: rock.left, backgroundColor: '#7a2a2a' }]}
-                  onPress={hitRock}
-                >
-                  <Text style={styles.emoji}>\uD83E\uDEA8</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <Text style={styles.meta}>Tap the gold paw. Avoid the rocks. Combo every 3 hits.</Text>
+            <Text style={styles.meta}>{tapNote}</Text>
+            <TouchableOpacity
+              style={[styles.target, showPaw ? styles.paw : styles.rock]}
+              onPress={pressTarget}
+            >
+              <Text style={styles.targetWord}>{showPaw ? 'PAW' : 'ROCK'}</Text>
+              <Text style={styles.targetHint}>{showPaw ? 'Tap me' : 'Do not tap'}</Text>
+            </TouchableOpacity>
           </View>
         )}
 
         {mode === 'scramble' && (
           <>
             <Text style={styles.hud}>
-              Sentence {sentenceIndex + 1}/{SENTENCES.length} \u00b7 Lives {'\u2764'.repeat(Math.max(lives, 0))} \u00b7 Score {score}
+              Sentence {sentenceIndex + 1} of {SENTENCES.length}. Lives {lives}. Score {score}
             </Text>
             <View style={styles.built}>
               <Text style={styles.builtText}>
@@ -367,7 +355,7 @@ export default function GamesScreen() {
         {mode === 'trail' && (
           <View style={styles.menuCard}>
             <Text style={styles.hud}>
-              Step {step + 1}/{TRAIL.length} \u00b7 Lives {'\u2764'.repeat(Math.max(lives, 0))} \u00b7 Score {score}
+              Step {step + 1} of {TRAIL.length}. Lives {lives}. Score {score}
             </Text>
             <Text style={styles.cardTitle}>{TRAIL[step].q}</Text>
             {TRAIL[step].options.map((option) => (
@@ -423,30 +411,26 @@ const styles = StyleSheet.create({
   best: { color: '#ffffff', marginTop: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   memCard: {
-    width: 72,
+    width: 96,
     height: 72,
     backgroundColor: '#2a5a4a',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 4,
   },
-  emoji: { fontSize: 28 },
-  arena: {
-    height: 280,
-    backgroundColor: '#143028',
-    borderRadius: 16,
-    marginBottom: 12,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  mover: {
-    position: 'absolute',
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  face: { color: '#ffffff', fontWeight: 'bold', textAlign: 'center' },
+  target: {
+    height: 220,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 12,
   },
+  paw: { backgroundColor: '#ffd700' },
+  rock: { backgroundColor: '#7a2a2a' },
+  targetWord: { color: '#1a3c34', fontSize: 42, fontWeight: 'bold' },
+  targetHint: { color: '#1a3c34', fontSize: 16, marginTop: 8, fontWeight: 'bold' },
   built: {
     minHeight: 64,
     backgroundColor: '#143028',
