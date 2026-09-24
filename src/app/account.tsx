@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   Alert,
   ImageBackground,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -24,6 +25,11 @@ export default function AccountScreen() {
   const [packStatus, setPackStatus] = useState('pending');
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
+  const [akela, setAkela] = useState('');
+  const [challenge, setChallenge] = useState('');
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventDate, setEventDate] = useState('');
+  const [shout, setShout] = useState('');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -102,6 +108,65 @@ export default function AccountScreen() {
     await supabase.auth.signOut();
   }
 
+  async function postAkela() {
+    if (!session?.user || !packName || !akela.trim()) return;
+    const { error } = await supabase.from('akela_notes').insert({
+      pack_name: packName,
+      message: akela.trim(),
+      created_by: session.user.id,
+    });
+    if (error) Alert.alert('Could not save', error.message);
+    else {
+      setAkela('');
+      Alert.alert('Posted', 'Cubs will see this on Home.');
+    }
+  }
+
+  async function postChallenge() {
+    if (!session?.user || !packName || !challenge.trim()) return;
+    const { error } = await supabase.from('weekly_challenges').insert({
+      pack_name: packName,
+      title: challenge.trim(),
+      created_by: session.user.id,
+    });
+    if (error) Alert.alert('Could not save', error.message);
+    else {
+      setChallenge('');
+      Alert.alert('Posted', 'Cubs will see this on Home.');
+    }
+  }
+
+  async function postEvent() {
+    if (!packName || !eventTitle.trim() || !eventDate.trim()) return;
+    const { error } = await supabase.from('pack_events').insert({
+      pack_name: packName,
+      title: eventTitle.trim(),
+      event_date: eventDate.trim(),
+    });
+    if (error) Alert.alert('Could not save', error.message);
+    else {
+      setEventTitle('');
+      setEventDate('');
+      Alert.alert('Posted', 'Cubs will see this on Home.');
+    }
+  }
+
+  async function postShout() {
+    if (!session?.user || !packName || !shout.trim()) return;
+    const { error } = await supabase.from('shoutouts').insert({
+      pack_name: packName,
+      message: shout.trim(),
+      created_by: session.user.id,
+    });
+    if (error) Alert.alert('Could not save', error.message);
+    else {
+      setShout('');
+      Alert.alert('Posted', 'Cubs will see this on Home.');
+    }
+  }
+
+  const isLeader = role === 'admin' || role === 'leader';
+
   if (session) {
     return (
       <ImageBackground
@@ -109,14 +174,14 @@ export default function AccountScreen() {
         style={styles.background}
         imageStyle={styles.backgroundImage}
       >
-        <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.title}>You are signed in</Text>
           <Text style={styles.subtitle}>{session.user.email}</Text>
           <Text style={styles.role}>Role: {role}</Text>
           <Text style={styles.role}>Pack: {packName || 'Not set'}</Text>
           <Text style={styles.role}>Pack access: {packStatus}</Text>
 
-          {(role === 'admin' || role === 'leader') && (
+          {isLeader && (
             <>
               <TouchableOpacity style={styles.button} onPress={() => router.push('/approve')}>
                 <Text style={styles.buttonText}>Approve badges</Text>
@@ -124,13 +189,66 @@ export default function AccountScreen() {
               <TouchableOpacity style={styles.button} onPress={() => router.push('/users')}>
                 <Text style={styles.buttonText}>Manage pack</Text>
               </TouchableOpacity>
+
+              <Text style={styles.section}>Leader announcements</Text>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Akela says"
+                placeholderTextColor="#88b8a8"
+                value={akela}
+                onChangeText={setAkela}
+              />
+              <TouchableOpacity style={styles.button} onPress={postAkela}>
+                <Text style={styles.buttonText}>Post Akela message</Text>
+              </TouchableOpacity>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Weekly challenge"
+                placeholderTextColor="#88b8a8"
+                value={challenge}
+                onChangeText={setChallenge}
+              />
+              <TouchableOpacity style={styles.button} onPress={postChallenge}>
+                <Text style={styles.buttonText}>Post weekly challenge</Text>
+              </TouchableOpacity>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Next meeting name"
+                placeholderTextColor="#88b8a8"
+                value={eventTitle}
+                onChangeText={setEventTitle}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Meeting date YYYY-MM-DD"
+                placeholderTextColor="#88b8a8"
+                value={eventDate}
+                onChangeText={setEventDate}
+              />
+              <TouchableOpacity style={styles.button} onPress={postEvent}>
+                <Text style={styles.buttonText}>Post next meeting</Text>
+              </TouchableOpacity>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Shout-out"
+                placeholderTextColor="#88b8a8"
+                value={shout}
+                onChangeText={setShout}
+              />
+              <TouchableOpacity style={styles.button} onPress={postShout}>
+                <Text style={styles.buttonText}>Post shout-out</Text>
+              </TouchableOpacity>
             </>
           )}
 
           <TouchableOpacity style={styles.button} onPress={signOut}>
             <Text style={styles.buttonText}>Sign Out</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </ImageBackground>
     );
   }
@@ -152,7 +270,6 @@ export default function AccountScreen() {
           value={fullName}
           onChangeText={setFullName}
         />
-
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -162,7 +279,6 @@ export default function AccountScreen() {
           value={email}
           onChangeText={setEmail}
         />
-
         <TextInput
           style={styles.input}
           placeholder="Password"
@@ -188,7 +304,6 @@ export default function AccountScreen() {
         <TouchableOpacity style={styles.button} onPress={signIn} disabled={loading}>
           <Text style={styles.buttonText}>{loading ? 'Please wait...' : 'Sign In'}</Text>
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.secondaryButton} onPress={signUp} disabled={loading}>
           <Text style={styles.secondaryText}>Create Account</Text>
         </TouchableOpacity>
@@ -198,19 +313,13 @@ export default function AccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    backgroundColor: '#1a3c34',
-  },
-  backgroundImage: {
-    opacity: 0.18,
-    resizeMode: 'contain',
-  },
+  background: { flex: 1, backgroundColor: '#1a3c34' },
+  backgroundImage: { opacity: 0.18, resizeMode: 'contain' },
   container: {
-    flex: 1,
     backgroundColor: 'rgba(26, 60, 52, 0.55)',
     padding: 20,
     justifyContent: 'center',
+    paddingBottom: 40,
   },
   title: {
     fontSize: 28,
@@ -231,30 +340,23 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontWeight: 'bold',
   },
-  label: {
+  section: {
     color: '#ffffff',
     fontWeight: 'bold',
-    marginBottom: 8,
+    textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 12,
   },
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
+  label: { color: '#ffffff', fontWeight: 'bold', marginBottom: 8 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   packButton: {
     backgroundColor: '#2a5a4a',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
   },
-  packActive: {
-    backgroundColor: '#ffd700',
-  },
-  packText: {
-    color: '#1a3c34',
-    fontWeight: 'bold',
-  },
+  packActive: { backgroundColor: '#ffd700' },
+  packText: { color: '#1a3c34', fontWeight: 'bold' },
   input: {
     backgroundColor: '#2a5a4a',
     color: '#ffffff',
@@ -269,18 +371,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  buttonText: {
-    color: '#1a3c34',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  secondaryButton: {
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  secondaryText: {
-    color: '#ffd700',
-    fontWeight: 'bold',
-  },
+  buttonText: { color: '#1a3c34', fontWeight: 'bold', fontSize: 16 },
+  secondaryButton: { padding: 14, alignItems: 'center', marginTop: 8 },
+  secondaryText: { color: '#ffd700', fontWeight: 'bold' },
 });
