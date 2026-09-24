@@ -12,6 +12,23 @@ import {
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '../lib/supabase';
 
+const TASKS = [
+  'Help at home without being asked.',
+  'Say something kind to someone in your pack or family.',
+  'Tidy a room or shared space.',
+  'Help prepare or pack away a meal.',
+  'Look after a pet or plant.',
+  'Make a card or note for someone.',
+  'Pick up litter somewhere safe with an adult.',
+  'Help a younger child or sibling.',
+  'Share a toy, book, or snack.',
+  'Hold a door or carry something for someone.',
+  'Spend 10 minutes helping with a chore.',
+  'Call or visit a family member to say hello.',
+  'Fill a water bottle and offer it to someone.',
+  'Thank a leader, teacher, or parent.',
+];
+
 const QUIZ = [
   {
     q: 'What is the Cub motto?',
@@ -19,7 +36,7 @@ const QUIZ = [
     answer: 'Do Your Best',
   },
   {
-    q: 'Silver Wolf is the first Cub advancement award. About how long should it take?',
+    q: 'Silver Wolf should take about how long?',
     options: ['Two weeks', 'About two years', 'Ten years'],
     answer: 'About two years',
   },
@@ -53,20 +70,28 @@ const QUIZ = [
     options: ['Helping someone each day', 'Winning a race', 'Skipping a meeting'],
     answer: 'Helping someone each day',
   },
-  {
-    q: 'The Promise and Law Challenge is part of which award?',
-    options: ['Only Link Badge', 'Silver Wolf', 'Only Leaping Wolf'],
-    answer: 'Silver Wolf',
-  },
-  {
-    q: 'Who started Scouting?',
-    options: ['Lord Baden-Powell', 'Nelson Mandela', 'Shaka Zulu'],
-    answer: 'Lord Baden-Powell',
-  },
 ];
 
 function todayStamp() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function todaysTask() {
+  const start = new Date(new Date().getFullYear(), 0, 0);
+  const diff = Math.floor((Date.now() - start.getTime()) / 86400000);
+  return TASKS[diff % TASKS.length];
+}
+
+function awardsFor(total: number, streak: number) {
+  const earned = [];
+  if (total >= 1) earned.push('First Good Turn');
+  if (total >= 3) earned.push('Helping Hands');
+  if (streak >= 3) earned.push('3-Day Streak');
+  if (total >= 7) earned.push('Week of Kindness');
+  if (streak >= 7) earned.push('7-Day Streak');
+  if (total >= 14) earned.push('Two-Week Helper');
+  if (total >= 30) earned.push('Good Turn Champion');
+  return earned;
 }
 
 export default function PackScreen() {
@@ -75,8 +100,10 @@ export default function PackScreen() {
   const [todayNote, setTodayNote] = useState('');
   const [note, setNote] = useState('');
   const [streak, setStreak] = useState(0);
+  const [total, setTotal] = useState(0);
   const [quizIndex, setQuizIndex] = useState(0);
   const [quizResult, setQuizResult] = useState('');
+  const task = todaysTask();
 
   useFocusEffect(
     useCallback(() => {
@@ -101,8 +128,9 @@ export default function PackScreen() {
 
     const dates = (turns || []).map((row) => row.turn_date);
     const today = todayStamp();
-    setDidToday(dates[0] === today);
-    setTodayNote(turns?.[0]?.turn_date === today ? turns[0].note || '' : '');
+    setDidToday(dates.includes(today));
+    setTodayNote(turns?.find((row) => row.turn_date === today)?.note || '');
+    setTotal(dates.length);
 
     let count = 0;
     const cursor = new Date();
@@ -119,18 +147,18 @@ export default function PackScreen() {
       return;
     }
     if (didToday) {
-      Alert.alert('Already done', 'You can only log one good turn today.');
+      Alert.alert('Already done', 'Come back tomorrow for a new good turn.');
       return;
     }
     if (!note.trim()) {
-      Alert.alert('Write a note', 'Tell us what good turn you did.');
+      Alert.alert('Write what you did', 'Say how you completed today\u2019s good turn.');
       return;
     }
 
     const { error } = await supabase.from('good_turns').upsert({
       user_id: userId,
       turn_date: todayStamp(),
-      note: note.trim(),
+      note: `${task} | ${note.trim()}`,
     });
 
     if (error) {
@@ -142,6 +170,7 @@ export default function PackScreen() {
     loadData();
   }
 
+  const earned = awardsFor(total, streak);
   const quiz = QUIZ[quizIndex];
 
   return (
@@ -154,26 +183,40 @@ export default function PackScreen() {
         <Text style={styles.heading}>Pack Fun</Text>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Good turn</Text>
-          <Text style={styles.cardText}>Streak: {streak} day(s)</Text>
+          <Text style={styles.cardTitle}>Today\u2019s good turn</Text>
+          <Text style={styles.task}>{task}</Text>
+          <Text style={styles.cardText}>
+            Streak {streak} day(s) · Total {total}
+          </Text>
           {didToday ? (
-            <Text style={styles.cardText}>
-              Already submitted today{todayNote ? `: ${todayNote}` : '.'}
-            </Text>
+            <Text style={styles.cardText}>Done today. {todayNote}</Text>
           ) : (
             <>
               <TextInput
                 style={styles.input}
-                placeholder="What good turn did you do today?"
+                placeholder="Write how you did this good turn"
                 placeholderTextColor="#88b8a8"
                 multiline
                 value={note}
                 onChangeText={setNote}
               />
               <TouchableOpacity style={styles.button} onPress={submitGoodTurn}>
-                <Text style={styles.buttonText}>Submit today\u2019s good turn</Text>
+                <Text style={styles.buttonText}>I did it</Text>
               </TouchableOpacity>
             </>
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Good turn badges</Text>
+          {earned.length === 0 ? (
+            <Text style={styles.cardText}>Complete today\u2019s task to earn your first badge.</Text>
+          ) : (
+            earned.map((item) => (
+              <Text key={item} style={styles.award}>
+                🏅 {item}
+              </Text>
+            ))
           )}
         </View>
 
@@ -193,7 +236,7 @@ export default function PackScreen() {
               <Text style={styles.quizText}>{option}</Text>
             </TouchableOpacity>
           ))}
-          {!!quizResult && <Text style={styles.meta}>{quizResult}</Text>}
+          {!!quizResult && <Text style={styles.cardText}>{quizResult}</Text>}
         </View>
       </ScrollView>
     </ImageBackground>
@@ -211,7 +254,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
-  meta: { color: '#a8d5c0', marginTop: 8 },
   card: {
     backgroundColor: '#2a5a4a',
     borderRadius: 12,
@@ -219,7 +261,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cardTitle: { color: '#ffd700', fontWeight: 'bold', fontSize: 18, marginBottom: 8 },
+  task: { color: '#ffffff', fontSize: 16, marginBottom: 8 },
   cardText: { color: '#a8d5c0', marginBottom: 8 },
+  award: { color: '#ffd700', marginBottom: 6, fontWeight: 'bold' },
   input: {
     backgroundColor: '#1a3c34',
     color: '#ffffff',
