@@ -11,11 +11,13 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 
 const AVATARS = ['🐺', '🦁', '🐻', '🦉', '🦊', '🐰', '🐼', '🦆'];
+const SIXES = ['Red Six', 'White Six', 'Black Six', 'Brown Six', 'Grey Six'];
 
 export default function AvatarScreen() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [avatar, setAvatar] = useState('🐺');
+  const [sixName, setSixName] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -28,22 +30,27 @@ export default function AvatarScreen() {
     const user = sessionData.session?.user;
     if (!user) return;
     setUserId(user.id);
-    const { data } = await supabase.from('profiles').select('avatar').eq('id', user.id).maybeSingle();
+    const { data } = await supabase
+      .from('profiles')
+      .select('avatar, six_name')
+      .eq('id', user.id)
+      .maybeSingle();
     if (data?.avatar) setAvatar(data.avatar);
+    if (data?.six_name) setSixName(data.six_name);
   }
 
-  async function save(next: string) {
-    if (!userId) {
-      Alert.alert('Please sign in', 'Use the Account tab first.');
-      return;
-    }
+  async function saveAvatar(next: string) {
+    if (!userId) return;
     const { error } = await supabase.from('profiles').update({ avatar: next }).eq('id', userId);
-    if (error) {
-      Alert.alert('Could not save', error.message);
-      return;
-    }
-    setAvatar(next);
-    Alert.alert('Saved', 'Your friends will see this avatar.');
+    if (error) Alert.alert('Could not save', error.message);
+    else setAvatar(next);
+  }
+
+  async function saveSix(next: string) {
+    if (!userId) return;
+    const { error } = await supabase.from('profiles').update({ six_name: next }).eq('id', userId);
+    if (error) Alert.alert('Could not save', error.message);
+    else setSixName(next);
   }
 
   return (
@@ -60,8 +67,17 @@ export default function AvatarScreen() {
         <Text style={styles.current}>{avatar}</Text>
         <View style={styles.row}>
           {AVATARS.map((item) => (
-            <TouchableOpacity key={item} style={styles.pick} onPress={() => save(item)}>
+            <TouchableOpacity key={item} style={styles.pick} onPress={() => saveAvatar(item)}>
               <Text style={styles.emoji}>{item}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Text style={styles.title}>My Six</Text>
+        <Text style={styles.meta}>{sixName || 'Not set'}</Text>
+        <View style={styles.row}>
+          {SIXES.map((item) => (
+            <TouchableOpacity key={item} style={styles.six} onPress={() => saveSix(item)}>
+              <Text style={styles.buttonText}>{item}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -80,8 +96,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   back: { color: '#ffd700', fontWeight: 'bold', marginBottom: 16 },
-  title: { color: '#ffffff', fontSize: 24, fontWeight: 'bold', textAlign: 'center' },
-  current: { fontSize: 64, textAlign: 'center', marginVertical: 16 },
+  title: { color: '#ffffff', fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginTop: 16 },
+  current: { fontSize: 64, textAlign: 'center', marginVertical: 12 },
+  meta: { color: '#a8d5c0', textAlign: 'center', marginBottom: 8 },
   row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
   pick: {
     backgroundColor: '#2a5a4a',
@@ -91,5 +108,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  six: { backgroundColor: '#ffd700', padding: 10, borderRadius: 8 },
+  buttonText: { color: '#1a3c34', fontWeight: 'bold' },
   emoji: { fontSize: 32 },
 });

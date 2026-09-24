@@ -14,6 +14,7 @@ export default function Layout() {
     >
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: () => <Text>🏠</Text> }} />
       <Tabs.Screen name="pack" options={{ title: 'Pack', tabBarIcon: () => <Text>🐺</Text> }} />
+      <Tabs.Screen name="games" options={{ title: 'Games', tabBarIcon: () => <Text>🎮</Text> }} />
       <Tabs.Screen name="cubs" options={{ title: 'Friends', tabBarIcon: () => <Text>👥</Text> }} />
       <Tabs.Screen name="badges" options={{ title: 'Badges', tabBarIcon: () => <Text>🏅</Text> }} />
       <Tabs.Screen name="account" options={{ title: 'Account', tabBarIcon: () => <Text>👤</Text> }} />
