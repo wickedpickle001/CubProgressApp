@@ -46,26 +46,6 @@ const QUIZ = [
     answer: 'Awareness Challenge',
   },
   {
-    q: 'Which Silver Wolf challenge is the Yellow Paw?',
-    options: ['Community Challenge', 'Promise and Law Challenge', 'Outdoor Challenge'],
-    answer: 'Community Challenge',
-  },
-  {
-    q: 'Which Silver Wolf challenge is the Blue Paw?',
-    options: ['Aptitude Challenge', 'Outdoor Challenge', 'Awareness Challenge'],
-    answer: 'Outdoor Challenge',
-  },
-  {
-    q: 'Which Silver Wolf challenge is the Red Paw?',
-    options: ['Aptitude Challenge', 'Community Challenge', 'Outdoor Challenge'],
-    answer: 'Aptitude Challenge',
-  },
-  {
-    q: 'After Silver Wolf, the next Cub advancement is usually...',
-    options: ['Springbok Scout', 'Gold Wolf', 'Eagle Scout'],
-    answer: 'Gold Wolf',
-  },
-  {
     q: 'A good turn is...',
     options: ['Helping someone each day', 'Winning a race', 'Skipping a meeting'],
     answer: 'Helping someone each day',
@@ -74,6 +54,13 @@ const QUIZ = [
 
 function todayStamp() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function weekStart() {
+  const date = new Date();
+  const day = date.getDay() || 7;
+  date.setDate(date.getDate() - day + 1);
+  return date.toISOString().slice(0, 10);
 }
 
 function todaysTask() {
@@ -101,6 +88,7 @@ export default function PackScreen() {
   const [note, setNote] = useState('');
   const [streak, setStreak] = useState(0);
   const [total, setTotal] = useState(0);
+  const [board, setBoard] = useState<{ name: string; avatar: string; count: number }[]>([]);
   const [quizIndex, setQuizIndex] = useState(0);
   const [quizResult, setQuizResult] = useState('');
   const task = todaysTask();
@@ -139,6 +127,36 @@ export default function PackScreen() {
       cursor.setDate(cursor.getDate() - 1);
     }
     setStreak(count);
+
+    const { data: me } = await supabase
+      .from('profiles')
+      .select('pack_name')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (!me?.pack_name) return;
+
+    const { data: packCubs } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar')
+      .eq('pack_name', me.pack_name)
+      .eq('pack_status', 'approved');
+
+    const start = weekStart();
+    const rows = [];
+    for (const cub of packCubs || []) {
+      const { data: weekTurns } = await supabase
+        .from('good_turns')
+        .select('turn_date')
+        .eq('user_id', cub.id)
+        .gte('turn_date', start);
+      rows.push({
+        name: cub.full_name || 'Cub',
+        avatar: cub.avatar || '🐺',
+        count: weekTurns?.length || 0,
+      });
+    }
+    rows.sort((a, b) => b.count - a.count);
+    setBoard(rows);
   }
 
   async function submitGoodTurn() {
@@ -160,12 +178,10 @@ export default function PackScreen() {
       turn_date: todayStamp(),
       note: `${task} | ${note.trim()}`,
     });
-
     if (error) {
       Alert.alert('Could not save', error.message);
       return;
     }
-
     setNote('');
     loadData();
   }
@@ -204,6 +220,19 @@ export default function PackScreen() {
                 <Text style={styles.buttonText}>I did it</Text>
               </TouchableOpacity>
             </>
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Kindness this week</Text>
+          {board.length === 0 ? (
+            <Text style={styles.cardText}>No pack scores yet.</Text>
+          ) : (
+            board.map((row, index) => (
+              <Text key={row.name} style={styles.award}>
+                {index + 1}. {row.avatar} {row.name} · {row.count}
+              </Text>
+            ))
           )}
         </View>
 
