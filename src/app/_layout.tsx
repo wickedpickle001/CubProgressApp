@@ -12,37 +12,15 @@ export default function Layout() {
         tabBarInactiveTintColor: '#a8d5c0',
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: () => <Text>🏠</Text>,
-        }}
-      />
-      <Tabs.Screen
-        name="pack"
-        options={{
-          title: 'Pack',
-          tabBarIcon: () => <Text>🐺</Text>,
-        }}
-      />
-      <Tabs.Screen
-        name="badges"
-        options={{
-          title: 'Badges',
-          tabBarIcon: () => <Text>🏅</Text>,
-        }}
-      />
-      <Tabs.Screen
-        name="account"
-        options={{
-          title: 'Account',
-          tabBarIcon: () => <Text>👤</Text>,
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: () => <Text>🏠</Text> }} />
+      <Tabs.Screen name="pack" options={{ title: 'Pack', tabBarIcon: () => <Text>🐺</Text> }} />
+      <Tabs.Screen name="cubs" options={{ title: 'Friends', tabBarIcon: () => <Text>👥</Text> }} />
+      <Tabs.Screen name="badges" options={{ title: 'Badges', tabBarIcon: () => <Text>🏅</Text> }} />
+      <Tabs.Screen name="account" options={{ title: 'Account', tabBarIcon: () => <Text>👤</Text> }} />
       <Tabs.Screen name="approve" options={{ href: null, title: 'Approve' }} />
       <Tabs.Screen name="users" options={{ href: null, title: 'Users' }} />
       <Tabs.Screen name="badge/[name]" options={{ href: null, title: 'Badge' }} />
+      <Tabs.Screen name="cub/[id]" options={{ href: null, title: 'Cub' }} />
       <Tabs.Screen name="explore" options={{ href: null }} />
     </Tabs>
   );
