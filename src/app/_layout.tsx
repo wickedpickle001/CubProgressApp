@@ -27,17 +27,17 @@ export default function Layout() {
         }}
       />
       <Tabs.Screen
-        name="approve"
-        options={{
-          title: 'Approve',
-          tabBarIcon: () => <Text>✅</Text>,
-        }}
-      />
-      <Tabs.Screen
         name="account"
         options={{
           title: 'Account',
           tabBarIcon: () => <Text>👤</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="approve"
+        options={{
+          href: null,
+          title: 'Approve',
         }}
       />
       <Tabs.Screen
@@ -48,20 +48,18 @@ export default function Layout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
-        options={{
-          href: null,
-        }}
-      />
-
-            <Tabs.Screen
         name="badge/[name]"
         options={{
           href: null,
           title: 'Badge',
         }}
       />
-
+      <Tabs.Screen
+        name="explore"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

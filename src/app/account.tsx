@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Alert,
+  ImageBackground,
   StyleSheet,
   Text,
   TextInput,
@@ -103,86 +104,111 @@ export default function AccountScreen() {
 
   if (session) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>You are signed in</Text>
-        <Text style={styles.subtitle}>{session.user.email}</Text>
-        <Text style={styles.role}>Role: {role}</Text>
-        <Text style={styles.role}>Pack: {packName || 'Not set'}</Text>
-        <Text style={styles.role}>Pack access: {packStatus}</Text>
+      <ImageBackground
+        source={require('../../assets/images/splash-icon.png')}
+        style={styles.background}
+        imageStyle={styles.backgroundImage}
+      >
+        <View style={styles.container}>
+          <Text style={styles.title}>You are signed in</Text>
+          <Text style={styles.subtitle}>{session.user.email}</Text>
+          <Text style={styles.role}>Role: {role}</Text>
+          <Text style={styles.role}>Pack: {packName || 'Not set'}</Text>
+          <Text style={styles.role}>Pack access: {packStatus}</Text>
 
-        {(role === 'admin' || role === 'leader') && (
-          <TouchableOpacity style={styles.button} onPress={() => router.push('/users')}>
-            <Text style={styles.buttonText}>Manage pack</Text>
+          {(role === 'admin' || role === 'leader') && (
+            <>
+              <TouchableOpacity style={styles.button} onPress={() => router.push('/approve')}>
+                <Text style={styles.buttonText}>Approve badges</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.button} onPress={() => router.push('/users')}>
+                <Text style={styles.buttonText}>Manage pack</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          <TouchableOpacity style={styles.button} onPress={signOut}>
+            <Text style={styles.buttonText}>Sign Out</Text>
           </TouchableOpacity>
-        )}
-
-        <TouchableOpacity style={styles.button} onPress={signOut}>
-          <Text style={styles.buttonText}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
+        </View>
+      </ImageBackground>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Account</Text>
-      <Text style={styles.subtitle}>Choose your pack. A leader will accept you.</Text>
+    <ImageBackground
+      source={require('../../assets/images/splash-icon.png')}
+      style={styles.background}
+      imageStyle={styles.backgroundImage}
+    >
+      <View style={styles.container}>
+        <Text style={styles.title}>Account</Text>
+        <Text style={styles.subtitle}>Choose your pack. A leader will accept you.</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Full name"
-        placeholderTextColor="#88b8a8"
-        value={fullName}
-        onChangeText={setFullName}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Full name"
+          placeholderTextColor="#88b8a8"
+          value={fullName}
+          onChangeText={setFullName}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#88b8a8"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#88b8a8"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#88b8a8"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#88b8a8"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
 
-      <Text style={styles.label}>My pack</Text>
-      <View style={styles.row}>
-        {PACKS.map((pack) => (
-          <TouchableOpacity
-            key={pack}
-            style={[styles.packButton, packName === pack && styles.packActive]}
-            onPress={() => setPackName(pack)}
-          >
-            <Text style={styles.packText}>{pack}</Text>
-          </TouchableOpacity>
-        ))}
+        <Text style={styles.label}>My pack</Text>
+        <View style={styles.row}>
+          {PACKS.map((pack) => (
+            <TouchableOpacity
+              key={pack}
+              style={[styles.packButton, packName === pack && styles.packActive]}
+              onPress={() => setPackName(pack)}
+            >
+              <Text style={styles.packText}>{pack}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TouchableOpacity style={styles.button} onPress={signIn} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? 'Please wait...' : 'Sign In'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.secondaryButton} onPress={signUp} disabled={loading}>
+          <Text style={styles.secondaryText}>Create Account</Text>
+        </TouchableOpacity>
       </View>
-
-      <TouchableOpacity style={styles.button} onPress={signIn} disabled={loading}>
-        <Text style={styles.buttonText}>{loading ? 'Please wait...' : 'Sign In'}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.secondaryButton} onPress={signUp} disabled={loading}>
-        <Text style={styles.secondaryText}>Create Account</Text>
-      </TouchableOpacity>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
     backgroundColor: '#1a3c34',
+  },
+  backgroundImage: {
+    opacity: 0.18,
+    resizeMode: 'contain',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: 'rgba(26, 60, 52, 0.55)',
     padding: 20,
     justifyContent: 'center',
   },

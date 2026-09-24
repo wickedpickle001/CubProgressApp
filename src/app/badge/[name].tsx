@@ -1,16 +1,24 @@
+import {
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioPlayer,
+  useAudioRecorder,
+} from 'expo-audio';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-    Alert,
-    Image,
-    Linking,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 
@@ -121,6 +129,62 @@ async function requireApprovedPack(userId: string) {
   return true;
 }
 
+function base64ToArrayBuffer(base64: string) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+type BadgeFile = {
+  id?: number;
+  file_type: string;
+  file_path: string;
+  uri: string;
+};
+
+function VoiceNoteButton({ onRecorded }: { onRecorded: (uri: string) => void }) {
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const [recording, setRecording] = useState(false);
+
+  async function toggle() {
+    const permission = await AudioModule.requestRecordingPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', 'Please allow the microphone.');
+      return;
+    }
+
+    if (recording) {
+      await recorder.stop();
+      setRecording(false);
+      if (recorder.uri) onRecorded(recorder.uri);
+      return;
+    }
+
+    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+    await recorder.prepareToRecordAsync();
+    recorder.record();
+    setRecording(true);
+  }
+
+  return (
+    <TouchableOpacity style={styles.photoButton} onPress={toggle}>
+      <Text style={styles.photoButtonText}>{recording ? 'Stop voice note' : 'Add voice note'}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function AudioPlayer({ uri }: { uri: string }) {
+  const player = useAudioPlayer(uri);
+  return (
+    <TouchableOpacity style={styles.photoButton} onPress={() => player.play()}>
+      <Text style={styles.photoButtonText}>Play voice note</Text>
+    </TouchableOpacity>
+  );
+}
+
 export default function BadgeDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ name: string }>();
@@ -132,8 +196,10 @@ export default function BadgeDetailScreen() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [photos, setPhotos] = useState<Record<string, string>>({});
-  const [photoPaths, setPhotoPaths] = useState<Record<string, string>>({});
+  const [files, setFiles] = useState<Record<string, BadgeFile[]>>({});
   const [saving, setSaving] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [leaderNote, setLeaderNote] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -149,9 +215,21 @@ export default function BadgeDetailScreen() {
 
         setUserId(user.id);
 
+        const { data: latest } = await supabase
+          .from('badge_submissions')
+          .select('status, review_note')
+          .eq('user_id', user.id)
+          .eq('badge_name', badgeName)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        setLocked(latest?.status === 'approved');
+        setLeaderNote(latest?.review_note || '');
+
         const { data, error } = await supabase
           .from('badge_progress')
-          .select('requirement_key, evidence_text, completed, photo_url, photo_data')
+          .select('requirement_key, evidence_text, completed, photo_data')
           .eq('user_id', user.id)
           .eq('badge_name', badgeName);
 
@@ -163,21 +241,39 @@ export default function BadgeDetailScreen() {
         const nextNotes: Record<string, string> = {};
         const nextDone: Record<string, boolean> = {};
         const nextPhotos: Record<string, string> = {};
-        const nextPaths: Record<string, string> = {};
-
-        for (const row of data || []) {
+        data?.forEach((row) => {
           nextNotes[row.requirement_key] = row.evidence_text || '';
           nextDone[row.requirement_key] = !!row.completed;
-          if (row.photo_url) nextPaths[row.requirement_key] = row.photo_url;
           if (row.photo_data) nextPhotos[row.requirement_key] = row.photo_data;
+        });
+
+        const { data: savedFiles } = await supabase
+          .from('badge_files')
+          .select('id, requirement_key, file_type, file_path')
+          .eq('user_id', user.id)
+          .eq('badge_name', badgeName)
+          .order('created_at');
+
+        const nextFiles: Record<string, BadgeFile[]> = {};
+        for (const row of savedFiles || []) {
+          const { data: signed } = await supabase.storage
+            .from('badge-evidence')
+            .createSignedUrl(row.file_path, 60 * 60 * 24 * 7);
+
+          if (!nextFiles[row.requirement_key]) nextFiles[row.requirement_key] = [];
+          nextFiles[row.requirement_key].push({
+            id: row.id,
+            file_type: row.file_type,
+            file_path: row.file_path,
+            uri: signed?.signedUrl || '',
+          });
         }
 
         if (cancelled) return;
-
         setNotes(nextNotes);
         setDone(nextDone);
-        setPhotoPaths(nextPaths);
         setPhotos(nextPhotos);
+        setFiles(nextFiles);
       }
 
       loadProgress();
@@ -187,66 +283,136 @@ export default function BadgeDetailScreen() {
     }, [badgeName])
   );
 
-  async function pickPhoto(item: string) {
-    if (!userId) {
-      Alert.alert('Please sign in', 'Use the Account tab first.');
-      return;
-    }
+  async function uploadLocalFile(localUri: string, fileType: string, item: string) {
+    if (!userId || locked) return;
 
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please allow photo access.');
-      return;
-    }
+    const ext = fileType === 'image' ? 'jpg' : fileType === 'video' ? 'mp4' : 'm4a';
+    const filePath = `${userId}/${slugify(badgeName)}/${Date.now()}-${Math.floor(Math.random() * 1000)}.${ext}`;
+    const contentType =
+      fileType === 'image' ? 'image/jpeg' : fileType === 'video' ? 'video/mp4' : 'audio/mp4';
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.4,
-      base64: true,
+    const base64 = await FileSystem.readAsStringAsync(localUri, {
+      encoding: FileSystem.EncodingType.Base64,
     });
-
-    if (result.canceled || !result.assets?.[0]) return;
-
-    const image = result.assets[0];
-    const dataUrl = image.base64 ? `data:image/jpeg;base64,${image.base64}` : image.uri;
-    setPhotos((prev) => ({ ...prev, [item]: dataUrl }));
-
-    const fileName = `${userId}/${slugify(badgeName)}/${Date.now()}.jpg`;
-    const response = await fetch(image.uri);
-    const arrayBuffer = await response.arrayBuffer();
 
     const { error: uploadError } = await supabase.storage
       .from('badge-evidence')
-      .upload(fileName, arrayBuffer, {
-        contentType: 'image/jpeg',
-        upsert: false,
-      });
+      .upload(filePath, base64ToArrayBuffer(base64), { contentType, upsert: false });
 
     if (uploadError) {
       Alert.alert('Upload failed', uploadError.message);
       return;
     }
 
-    setPhotoPaths((prev) => ({ ...prev, [item]: fileName }));
+    const { data: inserted, error } = await supabase
+      .from('badge_files')
+      .insert({
+        user_id: userId,
+        badge_name: badgeName,
+        requirement_key: item,
+        file_type: fileType,
+        file_path: filePath,
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      Alert.alert('Could not save file', error.message);
+      return;
+    }
+
+    setFiles((prev) => ({
+      ...prev,
+      [item]: [
+        ...(prev[item] || []),
+        {
+          id: inserted.id,
+          file_type: fileType,
+          file_path: filePath,
+          uri: localUri,
+        },
+      ],
+    }));
   }
 
-  async function saveProgress() {
+  async function removeFile(item: string, file: BadgeFile) {
+    if (locked) return;
+    if (file.file_path) {
+      await supabase.storage.from('badge-evidence').remove([file.file_path]);
+    }
+    if (file.id) {
+      const { error } = await supabase.from('badge_files').delete().eq('id', file.id);
+      if (error) {
+        Alert.alert('Could not remove', error.message);
+        return;
+      }
+    }
+    setFiles((prev) => ({
+      ...prev,
+      [item]: (prev[item] || []).filter((entry) => entry.file_path !== file.file_path),
+    }));
+  }
+
+  async function pickImage(item: string) {
+    if (locked) return;
     if (!userId) {
       Alert.alert('Please sign in', 'Use the Account tab first.');
       return;
     }
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', 'Please allow photo access.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.5,
+      allowsMultipleSelection: true,
+    });
+    if (result.canceled) return;
+    for (const asset of result.assets) {
+      await uploadLocalFile(asset.uri, 'image', item);
+    }
+  }
 
+  async function pickVideo(item: string) {
+    if (locked) return;
+    if (!userId) {
+      Alert.alert('Please sign in', 'Use the Account tab first.');
+      return;
+    }
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', 'Please allow video access.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['videos'],
+      videoMaxDuration: 20,
+      quality: 0.4,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    await uploadLocalFile(result.assets[0].uri, 'video', item);
+  }
+
+  async function saveProgress() {
+    if (locked) {
+      Alert.alert('Badge approved', 'This badge is locked and cannot be edited.');
+      return;
+    }
+    if (!userId) {
+      Alert.alert('Please sign in', 'Use the Account tab first.');
+      return;
+    }
     if (!(await requireApprovedPack(userId))) return;
 
     setSaving(true);
-
     const rows = requirements.map((item) => ({
       user_id: userId,
       badge_name: badgeName,
       requirement_key: item,
       evidence_text: notes[item] || '',
       completed: !!done[item],
-      photo_url: photoPaths[item] || null,
       photo_data: photos[item] || null,
       updated_at: new Date().toISOString(),
     }));
@@ -256,29 +422,30 @@ export default function BadgeDetailScreen() {
       .upsert(rows, { onConflict: 'user_id,badge_name,requirement_key' });
 
     setSaving(false);
-
     if (error) {
       Alert.alert('Could not save', error.message);
       return;
     }
-
-    Alert.alert('Saved', 'You can come back later and continue.');
+    Alert.alert('Saved', 'Your notes and files are kept for later.');
   }
 
   async function submitForApproval() {
+    if (locked) {
+      Alert.alert('Badge approved', 'This badge is locked and cannot be edited.');
+      return;
+    }
     if (!userId) {
       Alert.alert('Please sign in', 'Use the Account tab first.');
       return;
     }
-
     if (!(await requireApprovedPack(userId))) return;
 
     const evidence = requirements
       .map((item) => {
-        const photo = photoPaths[item] || photos[item] ? '\nPhoto attached' : '';
-        return `${item}: ${notes[item] || 'No note yet'} (${done[item] ? 'done' : 'not done'})${photo}`;
+        const count = files[item]?.length || 0;
+        return `${item}: ${notes[item] || 'No note yet'} (${done[item] ? 'done' : 'not done'}, ${count} file(s))`;
       })
-      .join('\n\n');
+      .join('\n');
 
     const { error } = await supabase.from('badge_submissions').insert({
       user_id: userId,
@@ -291,7 +458,6 @@ export default function BadgeDetailScreen() {
       Alert.alert('Could not submit', error.message);
       return;
     }
-
     Alert.alert('Submitted', 'A leader can now review this badge.');
   }
 
@@ -302,6 +468,12 @@ export default function BadgeDetailScreen() {
       </TouchableOpacity>
 
       <Text style={styles.heading}>{badgeName}</Text>
+      {locked && (
+        <Text style={styles.locked}>
+          This badge has been approved and is locked.
+          {leaderNote ? `\nLeader said: ${leaderNote}` : ''}
+        </Text>
+      )}
 
       <TouchableOpacity
         onPress={() =>
@@ -317,7 +489,10 @@ export default function BadgeDetailScreen() {
 
       {requirements.map((item) => (
         <View key={item} style={styles.card}>
-          <TouchableOpacity onPress={() => setDone((prev) => ({ ...prev, [item]: !prev[item] }))}>
+          <TouchableOpacity
+            disabled={locked}
+            onPress={() => setDone((prev) => ({ ...prev, [item]: !prev[item] }))}
+          >
             <Text style={styles.cardTitle}>
               {done[item] ? '☑' : '☐'} {item}
             </Text>
@@ -325,30 +500,61 @@ export default function BadgeDetailScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="Add evidence for this requirement"
+            placeholder="Add written evidence"
             placeholderTextColor="#88b8a8"
             multiline
+            editable={!locked}
             value={notes[item] || ''}
             onChangeText={(text) => setNotes((prev) => ({ ...prev, [item]: text }))}
           />
 
-          {!!photos[item] && <Image source={{ uri: photos[item] }} style={styles.photo} />}
+          {!!photos[item] && (
+            <View style={styles.fileBox}>
+              <Image source={{ uri: photos[item] }} style={styles.photo} />
+            </View>
+          )}
 
-          <TouchableOpacity style={styles.photoButton} onPress={() => pickPhoto(item)}>
-            <Text style={styles.photoButtonText}>
-              {photos[item] ? 'Change photo' : 'Add photo'}
-            </Text>
-          </TouchableOpacity>
+          {(files[item] || []).map((file, index) => (
+            <View key={`${file.file_path}-${index}`} style={styles.fileBox}>
+              {file.file_type === 'image' && !!file.uri && (
+                <Image source={{ uri: file.uri }} style={styles.photo} />
+              )}
+              {file.file_type === 'video' && (
+                <Text style={styles.fileLabel}>Video attached</Text>
+              )}
+              {file.file_type === 'audio' && !!file.uri && <AudioPlayer uri={file.uri} />}
+              {!locked && (
+                <TouchableOpacity style={styles.removeButton} onPress={() => removeFile(item, file)}>
+                  <Text style={styles.removeText}>Remove</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
+
+          {!locked && (
+            <View style={styles.row}>
+              <TouchableOpacity style={styles.photoButton} onPress={() => pickImage(item)}>
+                <Text style={styles.photoButtonText}>Add photo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.photoButton} onPress={() => pickVideo(item)}>
+                <Text style={styles.photoButtonText}>Add video</Text>
+              </TouchableOpacity>
+              <VoiceNoteButton onRecorded={(uri) => uploadLocalFile(uri, 'audio', item)} />
+            </View>
+          )}
         </View>
       ))}
 
-      <TouchableOpacity style={styles.button} onPress={saveProgress} disabled={saving}>
-        <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Save progress'}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.secondaryButton} onPress={submitForApproval}>
-        <Text style={styles.secondaryText}>Submit badge for approval</Text>
-      </TouchableOpacity>
+      {!locked && (
+        <>
+          <TouchableOpacity style={styles.button} onPress={saveProgress} disabled={saving}>
+            <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Save progress'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryButton} onPress={submitForApproval}>
+            <Text style={styles.secondaryText}>Submit badge for approval</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </ScrollView>
   );
 }
@@ -369,6 +575,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ffffff',
     marginBottom: 8,
+  },
+  locked: {
+    color: '#ffd700',
+    marginBottom: 12,
+    fontWeight: 'bold',
   },
   link: {
     color: '#ffd700',
@@ -402,8 +613,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: '#1a3c34',
   },
+  fileBox: {
+    marginBottom: 8,
+  },
+  fileLabel: {
+    color: '#ffd700',
+    marginBottom: 8,
+    fontWeight: 'bold',
+  },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   photoButton: {
-    alignSelf: 'flex-start',
     backgroundColor: '#1a3c34',
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -411,6 +634,15 @@ const styles = StyleSheet.create({
   },
   photoButtonText: {
     color: '#ffd700',
+    fontWeight: 'bold',
+  },
+  removeButton: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  removeText: {
+    color: '#ffb4b4',
     fontWeight: 'bold',
   },
   button: {

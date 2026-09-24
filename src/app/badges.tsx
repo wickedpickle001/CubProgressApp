@@ -2,6 +2,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   Alert,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -72,12 +73,14 @@ const BADGES = [
   '🎨 Traveller Badge',
   '🎨 Working Toys Badge',
   '🎨 World Friendship Badge',
+];
 
-];export default function BadgesScreen() {
+export default function BadgesScreen() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [progressCount, setProgressCount] = useState<Record<string, number>>({});
   const [statusByBadge, setStatusByBadge] = useState<Record<string, string>>({});
+  const [notesByBadge, setNotesByBadge] = useState<Record<string, string>>({});
 
   useFocusEffect(
     useCallback(() => {
@@ -110,7 +113,7 @@ const BADGES = [
 
     const { data: submissions, error } = await supabase
       .from('badge_submissions')
-      .select('badge_name, status')
+      .select('badge_name, status, review_note')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -120,12 +123,15 @@ const BADGES = [
     }
 
     const statuses: Record<string, string> = {};
+    const notes: Record<string, string> = {};
     submissions?.forEach((row) => {
       if (!statuses[row.badge_name]) {
         statuses[row.badge_name] = row.status;
+        notes[row.badge_name] = row.review_note || '';
       }
     });
     setStatusByBadge(statuses);
+    setNotesByBadge(notes);
   }
 
   function statusText(badge: string) {
@@ -135,35 +141,60 @@ const BADGES = [
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.heading}>Interest Badges</Text>
-      <Text style={styles.subheading}>Tap a badge to add evidence and save progress</Text>
-      {!userId && <Text style={styles.note}>Sign in to save your progress.</Text>}
+    <ImageBackground
+      source={require('../../assets/images/splash-icon.png')}
+      style={styles.background}
+      imageStyle={styles.backgroundImage}
+    >
+      <ScrollView style={styles.container}>
+        <Text style={styles.heading}>Interest Badges</Text>
+        <Text style={styles.subheading}>Tap a badge to add evidence and save progress</Text>
+        {!userId && <Text style={styles.note}>Sign in to save your progress.</Text>}
 
-      {BADGES.map((badge, index) => (
-        <TouchableOpacity
-          key={`${index}-${badge}`}
-          style={styles.card}
-                    onPress={() =>
-  router.push({
-    pathname: '/badge/[name]',
-    params: { name: badge.replace(/^[^A-Za-z]+/, '').replace(/\s+/g, '-').toLowerCase() },
-  })
-}
-        >
-          <Text style={styles.cardTitle}>{badge}</Text>
-          <Text style={styles.cardText}>Status: {statusText(badge)}</Text>
-          <Text style={styles.open}>Open →</Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+        {BADGES.map((badge, index) => (
+          <TouchableOpacity
+            key={`${index}-${badge}`}
+            style={styles.card}
+            onPress={() =>
+              router.push({
+                pathname: '/badge/[name]',
+                params: {
+                  name: badge.replace(/^[^A-Za-z]+/, '').replace(/\s+/g, '-').toLowerCase(),
+                },
+              })
+            }
+          >
+            <Text style={styles.cardTitle}>{badge}</Text>
+            <Text style={styles.cardText}>Status: {statusText(badge)}</Text>
+            {!!notesByBadge[badge] && (
+              <Text
+                style={
+                  statusByBadge[badge] === 'rejected' ? styles.rejectNote : styles.approveNote
+                }
+              >
+                Leader said: {notesByBadge[badge]}
+              </Text>
+            )}
+            <Text style={styles.open}>Open →</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
     backgroundColor: '#1a3c34',
+  },
+  backgroundImage: {
+    opacity: 0.18,
+    resizeMode: 'contain',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: 'rgba(26, 60, 52, 0.55)',
     padding: 20,
   },
   heading: {
@@ -199,6 +230,14 @@ const styles = StyleSheet.create({
   cardText: {
     fontSize: 15,
     color: '#a8d5c0',
+    marginBottom: 8,
+  },
+  rejectNote: {
+    color: '#ffb4b4',
+    marginBottom: 8,
+  },
+  approveNote: {
+    color: '#ffd700',
     marginBottom: 8,
   },
   open: {
