@@ -1,14 +1,13 @@
 {
   "name": "cubprogressapp",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "dependencies": {
     "@expo/ui": "~57.0.19",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.116.0",
-    "expo": "~57.0.24",
+    "expo": "57.0.25",
     "expo-audio": "~57.0.5",
-    "expo-av": "^16.0.8",
     "expo-constants": "~57.0.19",
     "expo-device": "~57.0.2",
     "expo-file-system": "~57.0.7",
