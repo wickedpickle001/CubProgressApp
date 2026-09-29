@@ -30,6 +30,9 @@ export default function AccountScreen() {
   const [eventTitle, setEventTitle] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [shout, setShout] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [joinAs, setJoinAs] = useState<'cub' | 'parent'>('cub');
+  const [cubName, setCubName] = useState('');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -67,6 +70,10 @@ export default function AccountScreen() {
       Alert.alert('Choose a pack', 'Select 11th PMB, 4th PMB or 1st Howick.');
       return;
     }
+    if (!consent) {
+      Alert.alert('Consent needed', 'A parent or guardian must agree before a cub account is created.');
+      return;
+    }
 
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({ email, password });
@@ -81,10 +88,20 @@ export default function AccountScreen() {
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: data.user.id,
         full_name: fullName || email,
-        role: 'cub',
+        role: joinAs,
         pack_name: packName,
         pack_status: 'pending',
+        consent_at: new Date().toISOString(),
+        active: true,
       });
+      if (!profileError && joinAs === 'parent' && cubName.trim()) {
+        await supabase.from('parent_links').insert({
+          parent_id: data.user.id,
+          pack_name: packName,
+          cub_name: cubName.trim(),
+          status: 'pending',
+        });
+      }
 
       if (profileError) {
         Alert.alert('Profile error', profileError.message);
@@ -181,8 +198,35 @@ export default function AccountScreen() {
           <Text style={styles.role}>Pack: {packName || 'Not set'}</Text>
           <Text style={styles.role}>Pack access: {packStatus}</Text>
 
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/alerts')}>
+            <Text style={styles.buttonText}>Pack notices</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/calendar')}>
+            <Text style={styles.buttonText}>Calendar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/skills')}>
+            <Text style={styles.buttonText}>Cub skills</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/camp')}>
+            <Text style={styles.buttonText}>Camp kit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/family')}>
+            <Text style={styles.buttonText}>My child</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/privacy')}>
+            <Text style={styles.buttonText}>Privacy</Text>
+          </TouchableOpacity>
+          {role === 'admin' && (
+            <TouchableOpacity style={styles.button} onPress={() => router.push('/catalogue')}>
+              <Text style={styles.buttonText}>Badge catalogue</Text>
+            </TouchableOpacity>
+          )}
+
           {isLeader && (
             <>
+              <TouchableOpacity style={styles.button} onPress={() => router.push('/dashboard')}>
+                <Text style={styles.buttonText}>Leader dashboard</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.button} onPress={() => router.push('/approve')}>
                 <Text style={styles.buttonText}>Approve badges</Text>
               </TouchableOpacity>
@@ -288,6 +332,21 @@ export default function AccountScreen() {
           onChangeText={setPassword}
         />
 
+        <Text style={styles.label}>I am joining as</Text>
+        <View style={styles.row}>
+          <TouchableOpacity style={[styles.packButton, joinAs === 'cub' && styles.packActive]} onPress={() => setJoinAs('cub')}>
+            <Text style={styles.packText}>Cub</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.packButton, joinAs === 'parent' && styles.packActive]} onPress={() => setJoinAs('parent')}>
+            <Text style={styles.packText}>Parent</Text>
+          </TouchableOpacity>
+        </View>
+        {joinAs === 'parent' && (
+          <TextInput style={styles.input} placeholder="Your cub's first name" placeholderTextColor="#88b8a8" value={cubName} onChangeText={setCubName} />
+        )}
+        <TouchableOpacity onPress={() => setConsent((value) => !value)}>
+          <Text style={styles.subtitle}>{consent ? 'Consent ticked' : 'Tick here: a parent agrees to this account'}</Text>
+        </TouchableOpacity>
         <Text style={styles.label}>My pack</Text>
         <View style={styles.row}>
           {PACKS.map((pack) => (
