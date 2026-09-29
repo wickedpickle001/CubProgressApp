@@ -498,7 +498,7 @@ export default function GamesScreen() {
             </Text>
             <Bar value={trailPages} max={22} color={TRAIL_SCENES[sceneId].tag === 'hard' ? '#c44536' : '#3aa6a0'} />
             {TRAIL_SCENES[sceneId].tag === 'hard' && (
-              <Text style={styles.consequence}>This is what followed your last choice.</Text>
+              <Text style={styles.consequence}>This is what followed that choice. A safer Cub choice is to stay with your leader and your Six.</Text>
             )}
             <View style={[styles.story, TRAIL_SCENES[sceneId].tag === 'hard' && styles.storyHard]}>
               <Text style={styles.kicker}>{TRAIL_SCENES[sceneId].tag === 'end' ? 'THE END' : 'CAMP HIKE'}</Text>
