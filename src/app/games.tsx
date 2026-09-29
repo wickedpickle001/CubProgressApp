@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TRAIL_SCENES, TRAIL_START, TrailChoice } from '../lib/trailStory';
 
 type Mode = 'menu' | 'memory' | 'tap' | 'scramble' | 'trail' | 'done';
 type Target = 'paw' | 'rock' | 'six';
@@ -40,26 +41,11 @@ const SENTENCES = [
   ['Loyal', 'cubs', 'help', 'their', 'pack'],
 ];
 
-const TRAIL = [
-  { q: 'The path splits. Which way?', options: ['Follow the markers', 'Leave the path', 'Run ahead alone'], answer: 'Follow the markers' },
-  { q: 'A cub drops a water bottle.', options: ['Pick it up for them', 'Kick it away', 'Pretend you did not see'], answer: 'Pick it up for them' },
-  { q: 'You hear thunder.', options: ['Tell the leader', 'Hide from the group', 'Climb the tallest tree'], answer: 'Tell the leader' },
-  { q: 'The stream is fast.', options: ['Wait and cross with a leader', 'Wade in by yourself', 'Throw stones at fish'], answer: 'Wait and cross with a leader' },
-  { q: 'You spot litter on the trail.', options: ['Pick up what is safe', 'Add your wrapper', 'Leave broken glass'], answer: 'Pick up what is safe' },
-  { q: 'Your Six is tired.', options: ['Walk together and share a joke', 'Race off and leave them', 'Complain the whole way'], answer: 'Walk together and share a joke' },
-  { q: 'You are unsure of the next marker.', options: ['Stop and check with Akela', 'Guess and keep going', 'Turn the sign around'], answer: 'Stop and check with Akela' },
-  { q: 'Someone forgot a hat.', options: ['Carry it to them', 'Hide it in a bush', 'Wear it and laugh'], answer: 'Carry it to them' },
-  { q: 'The cook needs help.', options: ['Wash a cup', 'Eat before the others', 'Splash water around'], answer: 'Wash a cup' },
-  { q: 'A younger cub is scared of the dark.', options: ['Walk beside them', 'Tell them to be quiet', 'Run ahead with the torch'], answer: 'Walk beside them' },
-  { q: 'You find a bird nest. What do you do?', options: ['Look, then leave it alone', 'Take an egg', 'Poke the nest'], answer: 'Look, then leave it alone' },
-  { q: 'Camp is in sight.', options: ['Help carry a bag', 'Rush the food table', 'Sit and wait to be served'], answer: 'Help carry a bag' },
-];
-
 const MENU = [
   { key: 'Paw memory', blurb: 'Flip coloured animal tiles across 4 boards.', tint: '#e0b322' },
   { key: 'Do Your Best tap', blurb: 'A big changing badge. Gold and blue are safe. Red is not.', tint: '#e07a2f' },
   { key: 'Law scramble', blurb: 'Build the gold sentence from word tiles.', tint: '#7b6bb5' },
-  { key: 'Trail walk', blurb: 'Follow the camp path. Each dot is a choice.', tint: '#3aa6a0' },
+  { key: 'Trail walk', blurb: 'A long camp story. A hard choice continues, and you live with it.', tint: '#3aa6a0' },
 ];
 
 function shuffle<T>(list: T[]) {
@@ -139,9 +125,9 @@ export default function GamesScreen() {
   const [built, setBuilt] = useState<string[]>([]);
   const checking = useRef(false);
 
-  const [step, setStep] = useState(0);
-  const [trailOptions, setTrailOptions] = useState<string[]>(TRAIL[0].options);
-  const [trailNote, setTrailNote] = useState('');
+  const [sceneId, setSceneId] = useState(TRAIL_START);
+  const [trailPages, setTrailPages] = useState(1);
+  const [hardStops, setHardStops] = useState(0);
 
   useEffect(() => {
     AsyncStorage.getItem(BEST_KEY)
@@ -342,33 +328,23 @@ export default function GamesScreen() {
 
   function startTrail() {
     setPoints(0);
-    setLifeCount(4);
-    setStep(0);
-    setTrailOptions(shuffle(TRAIL[0].options));
-    setTrailNote('Pick the Cub way.');
+    setHardStops(0);
+    setTrailPages(1);
+    setSceneId(TRAIL_START);
     setMode('trail');
   }
 
-  function chooseTrail(option: string) {
-    const correct = option === TRAIL[step].answer;
-    if (!correct) {
-      const left = livesRef.current - 1;
-      setLifeCount(left);
-      setTrailNote('Wrong path. Try a different colour.');
-      setTrailOptions(shuffle(TRAIL[step].options));
-      if (left <= 0) finish('Trail walk', scoreRef.current);
-      return;
-    }
-    const nextScore = scoreRef.current + 10;
+  function chooseTrail(choice: TrailChoice) {
+    const nextScore = scoreRef.current + (choice.kind === 'steady' ? 8 : 4);
     setPoints(nextScore);
-    if (step < TRAIL.length - 1) {
-      const nextStep = step + 1;
-      setStep(nextStep);
-      setTrailOptions(shuffle(TRAIL[nextStep].options));
-      setTrailNote('Good path.');
-    } else {
-      finish('Trail walk', nextScore + livesRef.current * 8);
-    }
+    if (choice.kind === 'hard') setHardStops((count) => count + 1);
+    setTrailPages((count) => count + 1);
+    setSceneId(choice.next);
+  }
+
+  function finishTrail() {
+    const bonus = Math.max(0, 36 - hardStops * 3);
+    finish('Trail walk', scoreRef.current + bonus);
   }
 
   function replay() {
@@ -518,33 +494,30 @@ export default function GamesScreen() {
         {mode === 'trail' && (
           <View>
             <Text style={styles.hud}>
-              Camp step {step + 1} of {TRAIL.length}  ·  {score} pts
+              Page {trailPages}  ·  Hard turns {hardStops}  ·  {score} pts
             </Text>
-            <Lives count={lives} />
-            <View style={styles.path}>
-              {TRAIL.map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.pathDot,
-                    index < step && styles.pathDone,
-                    index === step && styles.pathNow,
-                  ]}
-                />
-              ))}
-            </View>
-            <View style={styles.menuCard}>
-              <Text style={styles.cardTitle}>{TRAIL[step].q}</Text>
-              {trailOptions.map((option, index) => (
+            <Bar value={trailPages} max={22} color={TRAIL_SCENES[sceneId].tag === 'hard' ? '#c44536' : '#3aa6a0'} />
+            {TRAIL_SCENES[sceneId].tag === 'hard' && (
+              <Text style={styles.consequence}>This is what followed your last choice.</Text>
+            )}
+            <View style={[styles.story, TRAIL_SCENES[sceneId].tag === 'hard' && styles.storyHard]}>
+              <Text style={styles.kicker}>{TRAIL_SCENES[sceneId].tag === 'end' ? 'THE END' : 'CAMP HIKE'}</Text>
+              <Text style={styles.cardTitle}>{TRAIL_SCENES[sceneId].title}</Text>
+              <Text style={styles.storyText}>{TRAIL_SCENES[sceneId].text}</Text>
+              {TRAIL_SCENES[sceneId].choices.map((choice) => (
                 <TouchableOpacity
-                  key={option}
-                  style={[styles.choice, { borderLeftColor: ANIMALS[index % 3].color }]}
-                  onPress={() => chooseTrail(option)}
+                  key={choice.label}
+                  style={[styles.choice, { borderLeftColor: choice.kind === 'hard' ? '#c44536' : '#3aa6a0' }]}
+                  onPress={() => chooseTrail(choice)}
                 >
-                  <Text style={styles.choiceText}>{option}</Text>
+                  <Text style={styles.choiceText}>{choice.label}</Text>
                 </TouchableOpacity>
               ))}
-              {!!trailNote && <Text style={styles.meta}>{trailNote}</Text>}
+              {TRAIL_SCENES[sceneId].tag === 'end' && (
+                <TouchableOpacity style={styles.play} onPress={finishTrail}>
+                  <Text style={styles.playText}>Finish the hike</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}
@@ -673,6 +646,10 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 8,
   },
+  story: { backgroundColor: '#1d4a3e', borderRadius: 18, padding: 16 },
+  storyHard: { borderWidth: 2, borderColor: '#c44536' },
+  storyText: { color: '#f4f1ea', fontSize: 16, lineHeight: 24, marginTop: 8 },
+  consequence: { color: '#ffb4a8', fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
   choiceText: { color: '#fffaf0', fontWeight: 'bold' },
   result: {
     backgroundColor: '#1d4a3e',
