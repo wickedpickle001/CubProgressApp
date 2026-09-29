@@ -1,5 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
 
 export default function Layout() {
   return (
@@ -12,12 +12,48 @@ export default function Layout() {
         tabBarInactiveTintColor: '#a8d5c0',
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: () => <Text>H</Text> }} />
-      <Tabs.Screen name="pack" options={{ title: 'My Journey', tabBarIcon: () => <Text>J</Text> }} />
-      <Tabs.Screen name="games" options={{ title: 'Games', tabBarIcon: () => <Text>G</Text> }} />
-      <Tabs.Screen name="cubs" options={{ title: 'My Six', tabBarIcon: () => <Text>S</Text> }} />
-      <Tabs.Screen name="badges" options={{ title: 'Badges', tabBarIcon: () => <Text>B</Text> }} />
-      <Tabs.Screen name="account" options={{ title: 'Account', tabBarIcon: () => <Text>A</Text> }} />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => <Ionicons name="home" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="pack"
+        options={{
+          title: 'My Journey',
+          tabBarIcon: ({ color, size }) => <Ionicons name="paw" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="games"
+        options={{
+          title: 'Games',
+          tabBarIcon: ({ color, size }) => <Ionicons name="game-controller" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="cubs"
+        options={{
+          title: 'My Six',
+          tabBarIcon: ({ color, size }) => <Ionicons name="people" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="badges"
+        options={{
+          title: 'Badges',
+          tabBarIcon: ({ color, size }) => <Ionicons name="ribbon" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="account"
+        options={{
+          title: 'Account',
+          tabBarIcon: ({ color, size }) => <Ionicons name="person" color={color} size={size} />,
+        }}
+      />
       <Tabs.Screen name="avatar" options={{ href: null, title: 'Avatar' }} />
       <Tabs.Screen name="approve" options={{ href: null, title: 'Approve' }} />
       <Tabs.Screen name="users" options={{ href: null, title: 'Users' }} />
@@ -35,3 +71,4 @@ export default function Layout() {
     </Tabs>
   );
 }
+
