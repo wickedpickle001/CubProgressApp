@@ -101,7 +101,7 @@ export default function ApproveScreen() {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, pack_name')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -130,7 +130,7 @@ export default function ApproveScreen() {
     for (const submission of submissions || []) {
       const { data: cub } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('full_name, pack_name')
         .eq('id', submission.user_id)
         .maybeSingle();
 
@@ -162,6 +162,9 @@ export default function ApproveScreen() {
         });
       }
 
+      if (profile?.role === 'leader' && cub?.pack_name && cub.pack_name !== profile.pack_name) {
+        continue;
+      }
       withDetails.push({
         ...submission,
         cubName: cub?.full_name || 'Unknown cub',
@@ -196,6 +199,23 @@ export default function ApproveScreen() {
     if (error) {
       Alert.alert('Could not update', error.message);
       return;
+    }
+
+    const item = items.find((row) => row.id === id);
+    const { data: userData } = await supabase.auth.getUser();
+    await supabase.from('assessment_history').insert({
+      user_id: item?.user_id,
+      badge_name: item?.badge_name,
+      status,
+      note: reviewNote,
+      assessor_id: userData.user?.id,
+    });
+    if (item?.user_id) {
+      await supabase.from('app_notifications').insert({
+        user_id: item.user_id,
+        title: status === 'approved' ? 'Badge approved' : 'Badge needs more work',
+        body: reviewNote,
+      });
     }
 
     loadData();
