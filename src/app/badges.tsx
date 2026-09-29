@@ -135,8 +135,11 @@ export default function BadgesScreen() {
   }
 
   function statusText(badge: string) {
-    if (statusByBadge[badge]) return statusByBadge[badge];
-    if (progressCount[badge]) return `${progressCount[badge]} requirement(s) saved`;
+    const raw = statusByBadge[badge];
+    if (raw === 'approved') return 'Approved';
+    if (raw === 'rejected') return 'Returned for more work';
+    if (raw === 'pending' || raw === 'submitted') return 'Submitted';
+    if (progressCount[badge]) return 'In progress';
     return 'Not started';
   }
 
@@ -148,7 +151,7 @@ export default function BadgesScreen() {
     >
       <ScrollView style={styles.container}>
         <Text style={styles.heading}>Interest Badges</Text>
-        <Text style={styles.subheading}>Tap a badge to add evidence and save progress</Text>
+        <Text style={styles.subheading}>Tap a badge to work at your own pace. These are interest badges, not Wolf awards.</Text>
         {!userId && <Text style={styles.note}>Sign in to save your progress.</Text>}
 
         {BADGES.map((badge, index) => (
