@@ -11,11 +11,13 @@ import {
 import { supabase } from '../lib/supabase';
 
 const PACKS = ['11th PMB', '4th PMB', '1st Howick'];
+const SIXES = ['Red', 'Yellow', 'Blue', 'Green', 'White', 'Orange'];
 
 export default function UsersScreen() {
   const [role, setMyRole] = useState('');
   const [myPack, setMyPack] = useState('');
   const [users, setUsers] = useState<any[]>([]);
+  const [links, setLinks] = useState<any[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -46,7 +48,7 @@ export default function UsersScreen() {
 
     let query = supabase
       .from('profiles')
-      .select('id, full_name, role, pack_name, pack_status')
+      .select('id, full_name, role, pack_name, pack_status, six_name, active')
       .order('full_name');
 
     if (profile?.role === 'leader' && profile.pack_name) {
@@ -60,6 +62,9 @@ export default function UsersScreen() {
     }
 
     setUsers(data || []);
+    const { data: parentRows } = await supabase.from('parent_links').select('*').eq('status', 'pending');
+    const mine = (parentRows || []).filter((row) => profile?.role === 'admin' || row.pack_name === profile?.pack_name);
+    setLinks(mine);
   }
 
   async function setRole(id: string, nextRole: string) {
@@ -78,6 +83,28 @@ export default function UsersScreen() {
       return;
     }
     loadData();
+  }
+
+  async function setSix(id: string, six: string) {
+    const { error } = await supabase.from('profiles').update({ six_name: six }).eq('id', id);
+    if (error) Alert.alert('Could not set Six', error.message);
+    else loadData();
+  }
+
+  async function setActive(id: string, active: boolean) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const { error } = await supabase.from('profiles').update({ active }).eq('id', id);
+    if (error) Alert.alert('Could not update', error.message);
+    else {
+      await supabase.from('audit_log').insert({ actor_id: sessionData.session?.user?.id, action: active ? 'reactivate' : 'pause', detail: id });
+      loadData();
+    }
+  }
+
+  async function linkParent(link: any, cubId: string) {
+    const { error } = await supabase.from('parent_links').update({ cub_id: cubId, status: 'approved' }).eq('id', link.id);
+    if (error) Alert.alert('Could not link', error.message);
+    else loadData();
   }
 
   async function setPackStatus(id: string, packStatus: string) {
@@ -142,6 +169,30 @@ export default function UsersScreen() {
               </View>
             </>
           )}
+          <Text style={styles.status}>Six: {person.six_name || 'not set'} · {person.active === false ? 'paused' : 'active'}</Text>
+          <View style={styles.row}>
+            {SIXES.map((six) => (
+              <TouchableOpacity key={six} style={styles.packButton} onPress={() => setSix(person.id, six)}>
+                <Text style={styles.packText}>{six}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <TouchableOpacity style={styles.rejectButton} onPress={() => setActive(person.id, person.active === false)}>
+            <Text style={styles.rejectText}>{person.active === false ? 'Turn account back on' : 'Pause account'}</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+      <Text style={styles.heading}>Parent links</Text>
+      {links.length === 0 && <Text style={styles.subtitle}>No parents waiting.</Text>}
+      {links.map((link) => (
+        <View key={link.id} style={styles.card}>
+          <Text style={styles.cardTitle}>Parent asked for {link.cub_name}</Text>
+          <Text style={styles.status}>{link.pack_name}</Text>
+          {users.filter((person) => (person.full_name || '').toLowerCase().includes((link.cub_name || '').toLowerCase())).map((person) => (
+            <TouchableOpacity key={person.id} style={styles.button} onPress={() => linkParent(link, person.id)}>
+              <Text style={styles.buttonText}>Link to {person.full_name}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       ))}
     </ScrollView>
