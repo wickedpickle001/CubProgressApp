@@ -13,7 +13,18 @@ type Mode = 'menu' | 'memory' | 'tap' | 'scramble' | 'trail' | 'done';
 type Target = 'paw' | 'rock' | 'six';
 
 const BEST_KEY = 'cub-game-best';
-const FACES = ['Wolf', 'Lion', 'Bear', 'Owl', 'Fox', 'Rabbit', 'Panda', 'Duck'];
+
+const ANIMALS = [
+  { name: 'Wolf', mark: 'W', color: '#e0b322', ink: '#1a3c34' },
+  { name: 'Lion', mark: 'L', color: '#e07a2f', ink: '#1a140c' },
+  { name: 'Bear', mark: 'B', color: '#8d5a3c', ink: '#fff8ee' },
+  { name: 'Owl', mark: 'O', color: '#7b6bb5', ink: '#fff8ee' },
+  { name: 'Fox', mark: 'F', color: '#d4543c', ink: '#fff8ee' },
+  { name: 'Rabbit', mark: 'R', color: '#e7a0b4', ink: '#1a3c34' },
+  { name: 'Panda', mark: 'P', color: '#f4f1ea', ink: '#1a3c34' },
+  { name: 'Duck', mark: 'D', color: '#3aa6a0', ink: '#062826' },
+];
+
 const MEMORY_SIZES = [3, 4, 6, 8];
 
 const SENTENCES = [
@@ -44,6 +55,13 @@ const TRAIL = [
   { q: 'Camp is in sight.', options: ['Help carry a bag', 'Rush the food table', 'Sit and wait to be served'], answer: 'Help carry a bag' },
 ];
 
+const MENU = [
+  { key: 'Paw memory', blurb: 'Flip coloured animal tiles across 4 boards.', tint: '#e0b322' },
+  { key: 'Do Your Best tap', blurb: 'A big changing badge. Gold and blue are safe. Red is not.', tint: '#e07a2f' },
+  { key: 'Law scramble', blurb: 'Build the gold sentence from word tiles.', tint: '#7b6bb5' },
+  { key: 'Trail walk', blurb: 'Follow the camp path. Each dot is a choice.', tint: '#3aa6a0' },
+];
+
 function shuffle<T>(list: T[]) {
   const next = [...list];
   for (let i = next.length - 1; i > 0; i -= 1) {
@@ -72,6 +90,29 @@ function tapDelay(secondsLeft: number) {
   return 600;
 }
 
+function animalFor(name: string) {
+  return ANIMALS.find((item) => item.name === name) || ANIMALS[0];
+}
+
+function Bar({ value, max, color }: { value: number; max: number; color: string }) {
+  const width = Math.max(6, Math.min(100, (value / max) * 100));
+  return (
+    <View style={styles.barTrack}>
+      <View style={[styles.barFill, { width: `${width}%`, backgroundColor: color }]} />
+    </View>
+  );
+}
+
+function Lives({ count }: { count: number }) {
+  return (
+    <View style={styles.lifeRow}>
+      {Array.from({ length: 5 }, (_, index) => (
+        <View key={index} style={[styles.lifeDot, index < count ? styles.lifeOn : styles.lifeOff]} />
+      ))}
+    </View>
+  );
+}
+
 export default function GamesScreen() {
   const [mode, setMode] = useState<Mode>('menu');
   const [title, setTitle] = useState('');
@@ -89,7 +130,7 @@ export default function GamesScreen() {
   const [timeLeft, setTimeLeft] = useState(45);
   const [target, setTarget] = useState<Target>('paw');
   const [combo, setCombo] = useState(0);
-  const [tapNote, setTapNote] = useState('Tap PAW. Tap SIX for extra. Never tap ROCK.');
+  const [tapNote, setTapNote] = useState('Gold PAW and blue SIX. Never the red ROCK.');
   const tick = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playing = useRef(false);
 
@@ -103,9 +144,11 @@ export default function GamesScreen() {
   const [trailNote, setTrailNote] = useState('');
 
   useEffect(() => {
-    AsyncStorage.getItem(BEST_KEY).then((raw) => {
-      if (raw) setBest(JSON.parse(raw));
-    }).catch(() => undefined);
+    AsyncStorage.getItem(BEST_KEY)
+      .then((raw) => {
+        if (raw) setBest(JSON.parse(raw));
+      })
+      .catch(() => undefined);
     return () => {
       if (tick.current) clearTimeout(tick.current);
     };
@@ -143,7 +186,7 @@ export default function GamesScreen() {
 
   function startMemory(nextLevel = 0) {
     const pairs = MEMORY_SIZES[nextLevel];
-    const faces = FACES.slice(0, pairs);
+    const faces = ANIMALS.slice(0, pairs).map((item) => item.name);
     setCards(
       shuffle([...faces, ...faces]).map((face, id) => ({
         id,
@@ -187,11 +230,8 @@ export default function GamesScreen() {
         lock.current = false;
         if (matched.every((item) => item.done)) {
           const bonus = scoreRef.current + livesRef.current * 4;
-          if (level < MEMORY_SIZES.length - 1) {
-            setTimeout(() => startMemory(level + 1), 450);
-          } else {
-            finish('Paw memory', bonus);
-          }
+          if (level < MEMORY_SIZES.length - 1) setTimeout(() => startMemory(level + 1), 450);
+          else finish('Paw memory', bonus);
         }
       } else {
         setCards((prev) =>
@@ -226,7 +266,7 @@ export default function GamesScreen() {
     setCombo(0);
     setTimeLeft(45);
     setTarget('paw');
-    setTapNote('Tap PAW. Tap SIX for extra. Never tap ROCK.');
+    setTapNote('Gold PAW and blue SIX. Never the red ROCK.');
     setMode('tap');
     armTap(45);
   }
@@ -290,11 +330,8 @@ export default function GamesScreen() {
     if (attempt === answer) {
       const nextScore = scoreRef.current + 12 + sentenceIndex * 2;
       setPoints(nextScore);
-      if (sentenceIndex < SENTENCES.length - 1) {
-        setTimeout(() => loadSentence(sentenceIndex + 1), 450);
-      } else {
-        finish('Law scramble', nextScore + livesRef.current * 6);
-      }
+      if (sentenceIndex < SENTENCES.length - 1) setTimeout(() => loadSentence(sentenceIndex + 1), 450);
+      else finish('Law scramble', nextScore + livesRef.current * 6);
     } else {
       const left = livesRef.current - 1;
       setLifeCount(left);
@@ -308,7 +345,7 @@ export default function GamesScreen() {
     setLifeCount(4);
     setStep(0);
     setTrailOptions(shuffle(TRAIL[0].options));
-    setTrailNote('Choose the Cub way. The answers are mixed up.');
+    setTrailNote('Pick the Cub way.');
     setMode('trail');
   }
 
@@ -317,7 +354,7 @@ export default function GamesScreen() {
     if (!correct) {
       const left = livesRef.current - 1;
       setLifeCount(left);
-      setTrailNote('Wrong path. The choices have been mixed again.');
+      setTrailNote('Wrong path. Try a different colour.');
       setTrailOptions(shuffle(TRAIL[step].options));
       if (left <= 0) finish('Trail walk', scoreRef.current);
       return;
@@ -328,7 +365,7 @@ export default function GamesScreen() {
       const nextStep = step + 1;
       setStep(nextStep);
       setTrailOptions(shuffle(TRAIL[nextStep].options));
-      setTrailNote('Good path. Keep going.');
+      setTrailNote('Good path.');
     } else {
       finish('Trail walk', nextScore + livesRef.current * 8);
     }
@@ -343,9 +380,9 @@ export default function GamesScreen() {
   }
 
   const speedLabel = timeLeft > 30 ? 'Slow' : timeLeft > 15 ? 'Fast' : 'Faster';
-  const targetStyle = target === 'paw' ? styles.paw : target === 'six' ? styles.six : styles.rock;
+  const targetColor = target === 'paw' ? '#e0b322' : target === 'six' ? '#3aa6a0' : '#c44536';
   const targetWord = target === 'paw' ? 'PAW' : target === 'six' ? 'SIX' : 'ROCK';
-  const targetHint = target === 'rock' ? 'Do not tap' : 'Tap me';
+  const targetHint = target === 'rock' ? 'Leave it' : 'Tap';
 
   return (
     <ImageBackground
@@ -354,55 +391,87 @@ export default function GamesScreen() {
       imageStyle={styles.backgroundImage}
     >
       <ScrollView scrollEnabled={mode !== 'tap'} contentContainerStyle={styles.container}>
-        <Text style={styles.heading}>Cub Games</Text>
+        <Text style={styles.kicker}>PACK GAMES</Text>
+        <Text style={styles.heading}>Do your best</Text>
         {mode !== 'menu' && mode !== 'done' && (
           <TouchableOpacity onPress={goMenu}>
             <Text style={styles.back}>Back to games</Text>
           </TouchableOpacity>
         )}
 
-        {mode === 'menu' && (
-          <>
-            <Text style={styles.meta}>Longer rounds. Your best score is saved on this phone.</Text>
-            {[
-              ['Paw memory', '4 boards, up to 16 cards. You have 5 lives for the whole game.', () => startMemory(0)],
-              ['Do Your Best tap', '45 seconds. It gets faster. Tap PAW and SIX. Never tap ROCK.', startTap],
-              ['Law scramble', '10 sentences. Undo a word if you tap the wrong one.', startScramble],
-              ['Trail walk', '12 camp choices. The answers are shuffled. You have 4 lives.', startTrail],
-            ].map(([label, blurb, action]) => (
-              <TouchableOpacity key={String(label)} style={styles.menuCard} onPress={action as () => void}>
-                <Text style={styles.cardTitle}>{label as string}</Text>
-                <Text style={styles.meta}>{blurb as string}</Text>
-                {!!best[label as string] && <Text style={styles.best}>Best {best[label as string]}</Text>}
-              </TouchableOpacity>
-            ))}
-          </>
-        )}
+        {mode === 'menu' &&
+          MENU.map((item) => (
+            <TouchableOpacity
+              key={item.key}
+              style={styles.menuCard}
+              onPress={() => {
+                if (item.key === 'Paw memory') startMemory(0);
+                if (item.key === 'Do Your Best tap') startTap();
+                if (item.key === 'Law scramble') startScramble();
+                if (item.key === 'Trail walk') startTrail();
+              }}
+            >
+              <View style={[styles.swatch, { backgroundColor: item.tint }]} />
+              <View style={styles.menuCopy}>
+                <Text style={styles.cardTitle}>{item.key}</Text>
+                <Text style={styles.metaLeft}>{item.blurb}</Text>
+                {!!best[item.key] && <Text style={styles.best}>Best {best[item.key]}</Text>}
+              </View>
+            </TouchableOpacity>
+          ))}
 
         {mode === 'memory' && (
           <>
             <Text style={styles.hud}>
-              Board {level + 1} of {MEMORY_SIZES.length}. Moves {moves}. Lives {lives}. Score {score}
+              Board {level + 1} of {MEMORY_SIZES.length}  ·  Moves {moves}  ·  {score} pts
             </Text>
+            <Lives count={lives} />
+            <Bar value={level + 1} max={MEMORY_SIZES.length} color="#e0b322" />
             <View style={styles.grid}>
-              {cards.map((card) => (
-                <TouchableOpacity key={card.id} style={[styles.memCard, card.done && styles.memDone]} onPress={() => flipCard(card.id)}>
-                  <Text style={styles.face}>{card.open || card.done ? card.face : '?'}</Text>
-                </TouchableOpacity>
-              ))}
+              {cards.map((card) => {
+                const animal = animalFor(card.face);
+                const shown = card.open || card.done;
+                return (
+                  <TouchableOpacity
+                    key={card.id}
+                    style={[
+                      styles.tile,
+                      {
+                        backgroundColor: shown ? animal.color : '#10241f',
+                        borderColor: card.done ? '#e0b322' : '#2f6a58',
+                        opacity: card.done ? 0.55 : 1,
+                      },
+                    ]}
+                    onPress={() => flipCard(card.id)}
+                  >
+                    <Text style={[styles.tileMark, { color: shown ? animal.ink : '#e0b322' }]}>
+                      {shown ? animal.mark : ''}
+                    </Text>
+                    <Text style={[styles.tileName, { color: shown ? animal.ink : '#8fbfae' }]}>
+                      {shown ? animal.name : 'Flip'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </>
         )}
 
         {mode === 'tap' && (
-          <View>
+          <View style={styles.tapWrap}>
             <Text style={styles.hud}>
-              Time {timeLeft}. {speedLabel}. Combo {combo}. Score {score}
+              {timeLeft}s  ·  {speedLabel}  ·  Combo {combo}  ·  {score}
             </Text>
+            <Bar value={timeLeft} max={45} color={targetColor} />
             <Text style={styles.meta}>{tapNote}</Text>
-            <TouchableOpacity style={[styles.target, targetStyle]} onPress={pressTarget}>
-              <Text style={target === 'rock' ? styles.targetWordLight : styles.targetWord}>{targetWord}</Text>
-              <Text style={target === 'rock' ? styles.targetHintLight : styles.targetHint}>{targetHint}</Text>
+            <TouchableOpacity
+              style={[styles.badge, { backgroundColor: targetColor, borderColor: '#fff4cc' }]}
+              onPress={pressTarget}
+            >
+              <View style={styles.badgeInner}>
+                <Text style={styles.badgeWord}>{targetWord}</Text>
+                <Text style={styles.badgeHint}>{targetHint}</Text>
+              </View>
             </TouchableOpacity>
           </View>
         )}
@@ -410,21 +479,36 @@ export default function GamesScreen() {
         {mode === 'scramble' && (
           <>
             <Text style={styles.hud}>
-              Sentence {sentenceIndex + 1} of {SENTENCES.length}. Lives {lives}. Score {score}
+              Line {sentenceIndex + 1} of {SENTENCES.length}  ·  {score} pts
             </Text>
-            <Text style={styles.meta}>Starts with {SENTENCES[sentenceIndex][0]}</Text>
-            <View style={styles.built}>
-              <Text style={styles.builtText}>
-                {built.map((token) => token.split('#')[0]).join(' ') || 'Tap the words in order'}
-              </Text>
+            <Lives count={lives} />
+            <Bar value={sentenceIndex + 1} max={SENTENCES.length} color="#7b6bb5" />
+            <View style={styles.sentenceBox}>
+              {built.length === 0 ? (
+                <Text style={styles.placeholder}>Tap the tiles in order</Text>
+              ) : (
+                <View style={styles.row}>
+                  {built.map((token) => (
+                    <View key={token} style={styles.placed}>
+                      <Text style={styles.placedText}>{token.split('#')[0]}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
             <TouchableOpacity style={styles.undo} onPress={undoWord}>
               <Text style={styles.undoText}>Undo last word</Text>
             </TouchableOpacity>
             <View style={styles.row}>
-              {pool.map((token) => (
-                <TouchableOpacity key={token} style={styles.word} onPress={() => pickWord(token)}>
-                  <Text style={styles.wordText}>{token.split('#')[0]}</Text>
+              {pool.map((token, index) => (
+                <TouchableOpacity
+                  key={token}
+                  style={[styles.chip, { backgroundColor: ANIMALS[index % ANIMALS.length].color }]}
+                  onPress={() => pickWord(token)}
+                >
+                  <Text style={[styles.chipText, { color: ANIMALS[index % ANIMALS.length].ink }]}>
+                    {token.split('#')[0]}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -432,23 +516,43 @@ export default function GamesScreen() {
         )}
 
         {mode === 'trail' && (
-          <View style={styles.menuCard}>
+          <View>
             <Text style={styles.hud}>
-              Step {step + 1} of {TRAIL.length}. Lives {lives}. Score {score}
+              Camp step {step + 1} of {TRAIL.length}  ·  {score} pts
             </Text>
-            <Text style={styles.cardTitle}>{TRAIL[step].q}</Text>
-            {trailOptions.map((option) => (
-              <TouchableOpacity key={option} style={styles.word} onPress={() => chooseTrail(option)}>
-                <Text style={styles.wordText}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-            {!!trailNote && <Text style={styles.meta}>{trailNote}</Text>}
+            <Lives count={lives} />
+            <View style={styles.path}>
+              {TRAIL.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.pathDot,
+                    index < step && styles.pathDone,
+                    index === step && styles.pathNow,
+                  ]}
+                />
+              ))}
+            </View>
+            <View style={styles.menuCard}>
+              <Text style={styles.cardTitle}>{TRAIL[step].q}</Text>
+              {trailOptions.map((option, index) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.choice, { borderLeftColor: ANIMALS[index % 3].color }]}
+                  onPress={() => chooseTrail(option)}
+                >
+                  <Text style={styles.choiceText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+              {!!trailNote && <Text style={styles.meta}>{trailNote}</Text>}
+            </View>
           </View>
         )}
 
         {mode === 'done' && (
-          <View style={styles.menuCard}>
-            <Text style={styles.cardTitle}>{title} finished</Text>
+          <View style={styles.result}>
+            <Text style={styles.kicker}>ROUND OVER</Text>
+            <Text style={styles.cardTitle}>{title}</Text>
             <Text style={styles.score}>{score}</Text>
             <Text style={styles.meta}>{starsFor(score)}</Text>
             <Text style={styles.best}>Best on this phone: {best[title] || score}</Text>
@@ -466,89 +570,123 @@ export default function GamesScreen() {
 }
 
 const styles = StyleSheet.create({
-  background: { flex: 1, backgroundColor: '#1a3c34' },
-  backgroundImage: { opacity: 0.18, resizeMode: 'contain' },
-  container: {
-    backgroundColor: 'rgba(26, 60, 52, 0.55)',
-    padding: 20,
-    paddingBottom: 48,
-  },
-  heading: {
-    color: '#ffffff',
-    fontSize: 26,
+  background: { flex: 1, backgroundColor: '#12352d' },
+  backgroundImage: { opacity: 0.16, resizeMode: 'contain' },
+  container: { padding: 18, paddingBottom: 56 },
+  kicker: {
+    color: '#e0b322',
+    letterSpacing: 3,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 4,
   },
-  back: { color: '#ffd700', fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
-  meta: { color: '#a8d5c0', marginBottom: 8, textAlign: 'center' },
-  hud: { color: '#ffd700', fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
+  heading: {
+    color: '#fffaf0',
+    fontSize: 32,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  back: { color: '#e0b322', fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
+  meta: { color: '#c9e6da', marginTop: 8, textAlign: 'center' },
+  metaLeft: { color: '#c9e6da', marginTop: 4 },
+  hud: { color: '#fffaf0', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
   menuCard: {
-    backgroundColor: '#2a5a4a',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardTitle: { color: '#ffd700', fontWeight: 'bold', fontSize: 18, marginBottom: 6 },
-  best: { color: '#ffffff', marginTop: 4 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
-  memCard: {
-    width: 96,
-    height: 72,
-    backgroundColor: '#2a5a4a',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 4,
-  },
-  memDone: { backgroundColor: '#143028' },
-  face: { color: '#ffffff', fontWeight: 'bold', textAlign: 'center' },
-  target: {
-    height: 240,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  paw: { backgroundColor: '#ffd700' },
-  six: { backgroundColor: '#7ec8e3' },
-  rock: { backgroundColor: '#7a2a2a' },
-  targetWord: { color: '#1a3c34', fontSize: 48, fontWeight: 'bold' },
-  targetHint: { color: '#1a3c34', fontSize: 16, marginTop: 8, fontWeight: 'bold' },
-  targetWordLight: { color: '#ffffff', fontSize: 48, fontWeight: 'bold' },
-  targetHintLight: { color: '#ffffff', fontSize: 16, marginTop: 8, fontWeight: 'bold' },
-  built: {
-    minHeight: 64,
-    backgroundColor: '#143028',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-  },
-  builtText: { color: '#ffffff', fontSize: 18, textAlign: 'center' },
-  undo: {
-    alignSelf: 'center',
-    marginBottom: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  undoText: { color: '#ffd700', fontWeight: 'bold' },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
-  word: {
-    backgroundColor: '#ffd700',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  wordText: { color: '#1a3c34', fontWeight: 'bold' },
-  score: { color: '#ffffff', fontSize: 48, fontWeight: 'bold', textAlign: 'center' },
-  play: {
-    backgroundColor: '#ffd700',
+    flexDirection: 'row',
+    backgroundColor: '#1d4a3e',
+    borderRadius: 18,
     padding: 14,
-    borderRadius: 10,
+    marginBottom: 12,
     alignItems: 'center',
-    marginTop: 12,
-    marginBottom: 8,
   },
-  playText: { color: '#1a3c34', fontWeight: 'bold' },
+  swatch: { width: 18, alignSelf: 'stretch', borderRadius: 9, marginRight: 12 },
+  menuCopy: { flex: 1 },
+  cardTitle: { color: '#fffaf0', fontWeight: 'bold', fontSize: 18 },
+  best: { color: '#e0b322', marginTop: 6, fontWeight: 'bold' },
+  barTrack: {
+    height: 10,
+    backgroundColor: '#0c241e',
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 14,
+  },
+  barFill: { height: 10, borderRadius: 8 },
+  lifeRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 10 },
+  lifeDot: { width: 16, height: 16, borderRadius: 8 },
+  lifeOn: { backgroundColor: '#e0b322' },
+  lifeOff: { backgroundColor: '#2a4038' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10 },
+  tile: {
+    width: 104,
+    height: 104,
+    borderRadius: 18,
+    borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileMark: { fontSize: 36, fontWeight: '900' },
+  tileName: { fontSize: 13, fontWeight: 'bold', marginTop: 2 },
+  tapWrap: { alignItems: 'center' },
+  badge: {
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    borderWidth: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 18,
+  },
+  badgeInner: {
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeWord: { color: '#fffaf0', fontSize: 42, fontWeight: '900' },
+  badgeHint: { color: '#fffaf0', fontSize: 16, marginTop: 6, fontWeight: 'bold' },
+  sentenceBox: {
+    minHeight: 84,
+    backgroundColor: '#0c241e',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 8,
+    justifyContent: 'center',
+  },
+  placeholder: { color: '#8fbfae', textAlign: 'center' },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
+  placed: { backgroundColor: '#e0b322', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 10 },
+  placedText: { color: '#1a3c34', fontWeight: 'bold' },
+  chip: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14 },
+  chipText: { fontWeight: 'bold', fontSize: 16 },
+  undo: { alignSelf: 'center', marginBottom: 12, padding: 8 },
+  undoText: { color: '#e0b322', fontWeight: 'bold' },
+  path: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginBottom: 12 },
+  pathDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: '#2a4038' },
+  pathDone: { backgroundColor: '#3aa6a0' },
+  pathNow: { backgroundColor: '#e0b322', width: 18, height: 18, borderRadius: 9 },
+  choice: {
+    backgroundColor: '#12352d',
+    borderRadius: 12,
+    borderLeftWidth: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  choiceText: { color: '#fffaf0', fontWeight: 'bold' },
+  result: {
+    backgroundColor: '#1d4a3e',
+    borderRadius: 22,
+    padding: 22,
+    alignItems: 'center',
+  },
+  score: { color: '#fffaf0', fontSize: 64, fontWeight: '900', marginVertical: 6 },
+  play: {
+    backgroundColor: '#e0b322',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 14,
+    marginTop: 14,
+  },
+  playText: { color: '#1a3c34', fontWeight: 'bold', fontSize: 16 },
 });
