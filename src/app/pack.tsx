@@ -86,8 +86,13 @@ export default function PackScreen() {
     if (!me?.pack_name) return;
     const { data: packCubs } = await supabase.from('profiles').select('id').eq('pack_name', me.pack_name).eq('pack_status', 'approved');
     const ids = new Set((packCubs || []).map((row) => row.id));
-    const { data: week } = await supabase.from('good_turns').select('user_id').gte('turn_date', weekStart());
-    setPackCount((week || []).filter((row) => ids.has(row.user_id)).length);
+    const { data: counted, error: countError } = await supabase.rpc('pack_good_turn_count', { since_date: weekStart() });
+    if (!countError && typeof counted === 'number') {
+      setPackCount(counted);
+    } else {
+      const { data: week } = await supabase.from('good_turns').select('user_id').gte('turn_date', weekStart());
+      setPackCount((week || []).filter((row) => ids.has(row.user_id)).length);
+    }
   }
 
   async function submitGoodTurn() {
