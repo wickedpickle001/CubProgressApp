@@ -134,6 +134,11 @@ export default function ApproveScreen() {
         .eq('id', submission.user_id)
         .maybeSingle();
 
+      const inMyPack = !!cub?.pack_name && cub.pack_name === profile?.pack_name;
+      if (profile?.role === 'leader' && !inMyPack) {
+        continue;
+      }
+
       const { data: progress } = await supabase
         .from('badge_progress')
         .select('requirement_key, evidence_text, completed, photo_data')
@@ -162,9 +167,6 @@ export default function ApproveScreen() {
         });
       }
 
-      if (profile?.role === 'leader' && cub?.pack_name && cub.pack_name !== profile.pack_name) {
-        continue;
-      }
       withDetails.push({
         ...submission,
         cubName: cub?.full_name || 'Unknown cub',
