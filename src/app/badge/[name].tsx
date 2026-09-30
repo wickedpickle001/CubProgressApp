@@ -413,7 +413,6 @@ export default function BadgeDetailScreen() {
       requirement_key: item,
       evidence_text: notes[item] || '',
       completed: !!done[item],
-      photo_data: photos[item] || null,
       updated_at: new Date().toISOString(),
     }));
 
