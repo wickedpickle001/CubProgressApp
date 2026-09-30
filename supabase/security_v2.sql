@@ -792,3 +792,42 @@ begin
       case when rec.relrowsecurity then 'ON' else 'OFF' end;
   end loop;
 end $$;
+
+-- A leader must leave a real note when approving or returning a badge.
+-- This does not change older history rows. Cub resubmissions stay "pending".
+create or replace function public.protect_badge_review_note()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  actor text := coalesce(public.my_role(), '');
+begin
+  if auth.uid() is null then
+    if tg_op = 'DELETE' then
+      return old;
+    end if;
+    return new;
+  end if;
+
+  if new.status in ('approved', 'rejected', 'returned') then
+    if actor not in ('leader', 'admin') then
+      raise exception 'Only a leader can approve or return a badge';
+    end if;
+    if actor = 'leader' and public.pack_of(new.user_id) is distinct from public.my_pack_name() then
+      raise exception 'This cub is not in your pack';
+    end if;
+    if btrim(coalesce(new.review_note, '')) = '' then
+      raise exception 'Write a note before you approve or return this badge';
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_badge_review_note_trigger on public.badge_submissions;
+create trigger protect_badge_review_note_trigger
+before insert or update on public.badge_submissions
+for each row execute function public.protect_badge_review_note();
