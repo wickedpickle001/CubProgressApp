@@ -14,10 +14,20 @@ export default function AlertsScreen() {
     const user = sessionData.session?.user;
     if (!user) return;
     const { data: me } = await supabase.from('profiles').select('pack_name').eq('id', user.id).maybeSingle();
+    const pack = me?.pack_name || 'none';
+    const parts = [`user_id.eq.${user.id}`, `and(user_id.is.null,pack_name.eq.${pack})`];
+    const { data: links } = await supabase
+      .from('parent_links')
+      .select('cub_id')
+      .eq('parent_id', user.id)
+      .eq('status', 'approved');
+    for (const link of links || []) {
+      if (link.cub_id) parts.push(`user_id.eq.${link.cub_id}`);
+    }
     const { data, error } = await supabase
       .from('app_notifications')
       .select('id, title, body, created_at')
-      .or(`user_id.eq.${user.id},pack_name.eq.${me?.pack_name || 'none'}`)
+      .or(parts.join(','))
       .order('created_at', { ascending: false })
       .limit(30);
     if (error) setNote('Notices will show after the new database script is run.');
