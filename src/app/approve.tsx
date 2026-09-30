@@ -115,11 +115,41 @@ export default function ApproveScreen() {
     setCanApprove(allowed);
     if (!allowed) return;
 
-    const { data: submissions, error } = await supabase
+    let submissionsQuery = supabase
       .from('badge_submissions')
       .select('*')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
+
+    const cubNames: Record<string, string> = {};
+
+    if (profile?.role === 'leader') {
+      if (!profile.pack_name) {
+        setItems([]);
+        return;
+      }
+      const { data: packCubs, error: cubError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('pack_name', profile.pack_name)
+        .eq('role', 'cub')
+        .eq('pack_status', 'approved');
+      if (cubError) {
+        Alert.alert('Error', cubError.message);
+        return;
+      }
+      const cubIds = (packCubs || []).map((cub) => cub.id).filter(Boolean);
+      for (const cub of packCubs || []) {
+        if (cub.id) cubNames[cub.id] = cub.full_name || 'Cub';
+      }
+      if (cubIds.length === 0) {
+        setItems([]);
+        return;
+      }
+      submissionsQuery = submissionsQuery.in('user_id', cubIds);
+    }
+
+    const { data: submissions, error } = await submissionsQuery;
 
     if (error) {
       Alert.alert('Error', error.message);
@@ -128,15 +158,14 @@ export default function ApproveScreen() {
 
     const withDetails = [];
     for (const submission of submissions || []) {
-      const { data: cub } = await supabase
-        .from('profiles')
-        .select('full_name, pack_name')
-        .eq('id', submission.user_id)
-        .maybeSingle();
-
-      const inMyPack = !!cub?.pack_name && cub.pack_name === profile?.pack_name;
-      if (profile?.role === 'leader' && !inMyPack) {
-        continue;
+      let cubName = cubNames[submission.user_id] || 'Unknown cub';
+      if (profile?.role === 'admin') {
+        const { data: cub } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', submission.user_id)
+          .maybeSingle();
+        cubName = cub?.full_name || 'Unknown cub';
       }
 
       const { data: progress } = await supabase
@@ -169,7 +198,7 @@ export default function ApproveScreen() {
 
       withDetails.push({
         ...submission,
-        cubName: cub?.full_name || 'Unknown cub',
+        cubName,
         progress: progress || [],
         filesByRequirement,
       });
