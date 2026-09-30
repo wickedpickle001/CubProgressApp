@@ -11,8 +11,6 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 
 const AVATARS = ['🐺', '🦁', '🐻', '🦉', '🦊', '🐰', '🐼', '🦆'];
-const SIXES = ['Red Six', 'White Six', 'Black Six', 'Brown Six', 'Grey Six'];
-
 export default function AvatarScreen() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -46,13 +44,6 @@ export default function AvatarScreen() {
     else setAvatar(next);
   }
 
-  async function saveSix(next: string) {
-    if (!userId) return;
-    const { error } = await supabase.from('profiles').update({ six_name: next }).eq('id', userId);
-    if (error) Alert.alert('Could not save', error.message);
-    else setSixName(next);
-  }
-
   return (
     <ImageBackground
       source={require('../../assets/images/splash-icon.png')}
@@ -73,14 +64,7 @@ export default function AvatarScreen() {
           ))}
         </View>
         <Text style={styles.title}>My Six</Text>
-        <Text style={styles.meta}>{sixName || 'Not set'}</Text>
-        <View style={styles.row}>
-          {SIXES.map((item) => (
-            <TouchableOpacity key={item} style={styles.six} onPress={() => saveSix(item)}>
-              <Text style={styles.buttonText}>{item}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Text style={styles.meta}>{sixName || 'Your leader will put you in a Six.'}</Text>
       </View>
     </ImageBackground>
   );
