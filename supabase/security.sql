@@ -309,3 +309,12 @@ using (
       and pl.cub_id::text = (storage.foldername(name))[1]
   )
 );
+
+create or replace function public.pack_good_turn_count(since_date date)
+returns integer language sql stable security definer set search_path = public as $$
+  select count(*)::int
+  from public.good_turns g
+  join public.profiles p on p.id = g.user_id
+  where p.pack_name = public.my_pack_name()
+    and g.turn_date >= since_date;
+$$;
