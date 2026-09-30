@@ -28,8 +28,13 @@ export default function DashboardScreen() {
     const list = rows || [];
     setCubs(list.filter((row) => row.pack_status === 'approved').length);
     setPending(list.filter((row) => row.pack_status !== 'approved').length);
-    const { data: waiting } = await supabase.from('badge_submissions').select('id, status').eq('status', 'pending');
-    setBadges(waiting?.length || 0);
+    const { data: waiting } = await supabase.from('badge_submissions').select('id, user_id, status').eq('status', 'pending');
+    if (me.role === 'admin') {
+      setBadges(waiting?.length || 0);
+    } else {
+      const ids = new Set(list.map((row) => row.id));
+      setBadges((waiting || []).filter((row) => ids.has(row.user_id)).length);
+    }
     const { data: upcoming } = await supabase.from('pack_events').select('title, event_date').eq('pack_name', me.pack_name).order('event_date').limit(3);
     setEvents(upcoming || []);
   }
