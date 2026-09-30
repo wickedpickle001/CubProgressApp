@@ -28,9 +28,10 @@ export default function CubsScreen() {
     const start = new Date();
     const day = start.getDay() || 7;
     start.setDate(start.getDate() - day + 1);
-    const { data: turns } = await supabase.from('good_turns').select('user_id').gte('turn_date', start.toISOString().slice(0, 10));
-    const ids = new Set((rows.length ? rows : []).map((row) => row.id));
-    setPackTotal((turns || []).filter((row) => ids.has(row.user_id)).length);
+    const { data: counted, error: countError } = await supabase.rpc('pack_good_turn_count', {
+      since_date: start.toISOString().slice(0, 10),
+    });
+    setPackTotal(!countError && typeof counted === 'number' ? counted : 0);
   }
 
   const groups = cubs.reduce<Record<string, any[]>>((all, cub) => {
